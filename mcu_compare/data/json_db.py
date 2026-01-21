@@ -2,6 +2,7 @@ import os
 import json
 from typing import List, Dict, Any, Optional
 from glob import glob
+import re
 
 
 class JsonDatabase:
@@ -12,6 +13,10 @@ class JsonDatabase:
         os.makedirs(self.data_dir, exist_ok=True)
         # New structure: companies.json and mcus_company_{id}.json files
         self._companies_file = os.path.join(self.data_dir, 'companies.json')
+        # NCO/Commission store
+        self._nco_file = os.path.join(self.data_dir, 'nco.json')
+        # NCO Organizations store
+        self._nco_orgs_file = os.path.join(self.data_dir, 'nco_orgs.json')
 
     # ----- File helpers -----
     def _load_companies(self) -> List[Dict[str, Any]]:
@@ -25,18 +30,70 @@ class JsonDatabase:
             json.dump(companies, f, indent=2)
 
     def _mcus_file(self, company_id: int) -> str:
+        # Prefer name-based slug file. Fallback to ID-based legacy filename.
+        comp = self.get_company_by_id(company_id)
+        if comp:
+            slug = self._slugify(comp.get('name', 'company'), company_id)
+            return os.path.join(self.data_dir, f'mcus_{slug}.json')
         return os.path.join(self.data_dir, f'mcus_company_{company_id}.json')
 
+    def _legacy_mcus_file(self, company_id: int) -> str:
+        return os.path.join(self.data_dir, f'mcus_company_{company_id}.json')
+
+    def _slugify(self, name: str, company_id: Optional[int] = None) -> str:
+        s = name.strip().lower()
+        s = re.sub(r'[^a-z0-9]+', '_', s)
+        s = re.sub(r'_+', '_', s).strip('_')
+        if s:
+            return s
+        return f'company_{company_id}' if company_id is not None else 'company'
+
     def _load_mcus(self, company_id: int) -> List[Dict[str, Any]]:
+        # Try name-based file first
         fp = self._mcus_file(company_id)
         if os.path.exists(fp):
             with open(fp, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                raw = json.load(f)
+            return [self._normalize_mcu(r) for r in raw]
+        # Fallback and migrate from legacy id-based file
+        legacy = self._legacy_mcus_file(company_id)
+        if os.path.exists(legacy):
+            with open(legacy, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            data = [self._normalize_mcu(r) for r in data]
+            # Save to new path and remove legacy
+            self._save_mcus(company_id, data)
+            try:
+                os.remove(legacy)
+            except Exception:
+                pass
+            return data
         return []
 
     def _save_mcus(self, company_id: int, mcus: List[Dict[str, Any]]):
         with open(self._mcus_file(company_id), 'w', encoding='utf-8') as f:
             json.dump(mcus, f, indent=2)
+
+    # ----- NCO/Commission helpers -----
+    def _load_nco(self) -> List[Dict[str, Any]]:
+        if os.path.exists(self._nco_file):
+            with open(self._nco_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        return []
+
+    def _save_nco(self, rows: List[Dict[str, Any]]):
+        with open(self._nco_file, 'w', encoding='utf-8') as f:
+            json.dump(rows, f, indent=2)
+
+    def _load_nco_orgs(self) -> List[Dict[str, Any]]:
+        if os.path.exists(self._nco_orgs_file):
+            with open(self._nco_orgs_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        return []
+
+    def _save_nco_orgs(self, rows: List[Dict[str, Any]]):
+        with open(self._nco_orgs_file, 'w', encoding='utf-8') as f:
+            json.dump(rows, f, indent=2)
 
     # ----- Migration from legacy single-file app.json -----
     def _migrate_legacy_if_needed(self):
@@ -129,6 +186,20 @@ class JsonDatabase:
                 per.setdefault(cid, []).append(m)
             for cid, arr in per.items():
                 self._save_mcus(cid, arr)
+            # Initialize NCO/NCO Orgs stores if missing
+            if not os.path.exists(self._nco_file):
+                self._save_nco([])
+            if not os.path.exists(self._nco_orgs_file):
+                self._save_nco_orgs([{"id": 1, "name": "Sample Org"}])
+            # Migrate any existing NCO rows to include org_id if absent
+            rows = self._load_nco()
+            changed = False
+            for r in rows:
+                if 'org_id' not in r:
+                    r['org_id'] = 1
+                    changed = True
+            if changed:
+                self._save_nco(rows)
 
     # Utility
     def _next_company_id(self) -> int:
@@ -137,6 +208,14 @@ class JsonDatabase:
 
     def _next_global_mcu_id(self) -> int:
         return (max((m.get('id', 0) for m in self.all_mcus()), default=0) + 1)
+
+    def _next_nco_id(self) -> int:
+        rows = self._load_nco()
+        return (max((r.get('id', 0) for r in rows), default=0) + 1)
+
+    def _next_nco_org_id(self) -> int:
+        rows = self._load_nco_orgs()
+        return (max((r.get('id', 0) for r in rows), default=0) + 1)
 
     # API compatible with previous DB layer
     def list_companies(self, search: str = '') -> List[Dict[str, Any]]:
@@ -158,6 +237,10 @@ class JsonDatabase:
             if c['name'] == name:
                 return c['id']
         new_id = self._next_company_id()
+        # If marking as our company, clear the flag from others
+        if int(is_ours) == 1:
+            for c in companies:
+                c['is_ours'] = 0
         companies.append({"id": new_id, "name": name, "is_ours": int(is_ours)})
         self._save_companies(companies)
         # Ensure a per-company mcus file exists
@@ -189,15 +272,39 @@ class JsonDatabase:
             "id": new_id,
             "company_id": company_id,
         }
-        for f in ['name','core','dsp_core','fpu','max_clock_mhz','flash_kb','sram_kb','eeprom_kb','gpios','uarts','spis','i2cs','pwms','timers','dacs','adcs','cans','power_mgmt','clock_mgmt','qei','internal_osc','security_features']:
+        for f in ['name','core','core_alt','dsp_core','fpu','max_clock_mhz','flash_kb','sram_kb','eeprom','gpios','uarts','spis','i2cs','pwms','timers','dacs','adcs','cans','power_mgmt','clock_mgmt','qei','internal_osc','security_features']:
             record[f] = data.get(f, '' if f in ['name','core'] else 0)
         mcus.append(record)
         self._save_mcus(company_id, mcus)
         return new_id
 
+    def update_mcu(self, mcu_id: int, data: Dict[str, Any]) -> bool:
+        # Find the MCU and its company first
+        target = self.get_mcu_by_id(mcu_id)
+        if not target:
+            return False
+        company_id = int(target.get('company_id'))
+        mcus = self._load_mcus(company_id)
+        updated = False
+        fields = ['name','core','core_alt','dsp_core','fpu','max_clock_mhz','flash_kb','sram_kb','eeprom','gpios','uarts','spis','i2cs','pwms','timers','dacs','adcs','cans','power_mgmt','clock_mgmt','qei','internal_osc','security_features']
+        for idx, rec in enumerate(mcus):
+            if rec.get('id') == mcu_id:
+                # Update provided fields only
+                for f in fields:
+                    if f in data:
+                        rec[f] = data[f]
+                if 'name' in data:
+                    rec['name'] = data['name']
+                mcus[idx] = rec
+                updated = True
+                break
+        if updated:
+            self._save_mcus(company_id, mcus)
+        return updated
+
     def feature_columns(self) -> List[str]:
         return [
-            'core','dsp_core','fpu','max_clock_mhz','flash_kb','sram_kb','eeprom_kb','gpios','uarts','spis','i2cs','pwms','timers','dacs','adcs','cans','power_mgmt','clock_mgmt','qei','internal_osc','security_features'
+            'core','core_alt','dsp_core','fpu','max_clock_mhz','flash_kb','sram_kb','eeprom','gpios','uarts','spis','i2cs','pwms','timers','dacs','adcs','cans','power_mgmt','clock_mgmt','qei','internal_osc','security_features'
         ]
 
     def all_mcus(self) -> List[Dict[str, Any]]:
@@ -205,3 +312,88 @@ class JsonDatabase:
         for c in self._load_companies():
             result.extend(self._load_mcus(c['id']))
         return result
+
+    # ----- NCO/Commission public API -----
+    def add_nco_entry(self, company_id: int, comp_mcu_id: int, quantity: int, our_mcu_id: Optional[int] = None,
+                      notes: str = '', org_id: Optional[int] = None) -> int:
+        rows = self._load_nco()
+        new_id = self._next_nco_id()
+        # default org if not provided
+        if org_id is None:
+            orgs = self._load_nco_orgs()
+            org_id = orgs[0]['id'] if orgs else 1
+        rows.append({
+            'id': new_id,
+            'org_id': org_id,
+            'company_id': company_id,
+            'comp_mcu_id': comp_mcu_id,
+            'quantity': int(quantity),
+            'our_mcu_id': our_mcu_id,
+            'notes': notes or ''
+        })
+        self._save_nco(rows)
+        return new_id
+
+    def list_nco_entries(self, org_id: Optional[int] = None) -> List[Dict[str, Any]]:
+        rows = self._load_nco()
+        if org_id is not None:
+            rows = [r for r in rows if int(r.get('org_id', 0)) == int(org_id)]
+        return rows
+
+    def update_nco_entry(self, entry_id: int, *, company_id: Optional[int] = None,
+                         comp_mcu_id: Optional[int] = None, quantity: Optional[int] = None,
+                         our_mcu_id: Optional[int] = None, org_id: Optional[int] = None) -> bool:
+        rows = self._load_nco()
+        updated = False
+        for r in rows:
+            if int(r.get('id', -1)) == int(entry_id):
+                if org_id is not None:
+                    r['org_id'] = int(org_id)
+                if company_id is not None:
+                    r['company_id'] = int(company_id)
+                if comp_mcu_id is not None:
+                    r['comp_mcu_id'] = int(comp_mcu_id)
+                if quantity is not None:
+                    r['quantity'] = int(quantity)
+                # our_mcu_id can be None
+                if our_mcu_id is not None or 'our_mcu_id' in r:
+                    r['our_mcu_id'] = our_mcu_id
+                updated = True
+                break
+        if updated:
+            self._save_nco(rows)
+        return updated
+
+    # ----- NCO Orgs public API -----
+    def list_nco_orgs(self) -> List[Dict[str, Any]]:
+        return self._load_nco_orgs()
+
+    def add_nco_org(self, name: str) -> int:
+        rows = self._load_nco_orgs()
+        # prevent duplicates by name
+        for r in rows:
+            if r.get('name') == name:
+                return r['id']
+        new_id = self._next_nco_org_id()
+        rows.append({'id': new_id, 'name': name})
+        self._save_nco_orgs(rows)
+        return new_id
+
+    # Helpers
+    def get_company_by_id(self, company_id: int) -> Optional[Dict[str, Any]]:
+        for c in self._load_companies():
+            if c.get('id') == company_id:
+                return c
+        return None
+
+    def _normalize_mcu(self, rec: Dict[str, Any]) -> Dict[str, Any]:
+        r = dict(rec)
+        if 'eeprom' not in r:
+            kb = r.get('eeprom_kb', 0)
+            try:
+                r['eeprom'] = 1 if int(kb) > 0 else 0
+            except Exception:
+                r['eeprom'] = 0
+        if 'core_alt' not in r:
+            r['core_alt'] = ''
+        return r

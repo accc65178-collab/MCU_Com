@@ -1,0 +1,47 @@
+[
+  {
+    "id": 1,
+    "name": "Our Company",
+    "is_ours": 1
+  },
+  {
+    "id": 2,
+    "name": "STMicroelectronics",
+    "is_ours": 0
+  },
+  {
+    "id": 3,
+    "name": "NXP",
+    "is_ours": 0
+  },
+  {
+    "id": 4,
+    "name": "Microchip",
+    "is_ours": 0
+  },
+  {
+    "id": 5,
+    "name": "Renesas",
+    "is_ours": 0
+  },
+  {
+    "id": 6,
+    "name": "TI",
+    "is_ours": 0
+  },
+  {
+    "id": 7,
+    "name": "Nordic",
+    "is_ours": 0
+  },
+  {
+    "id": 8,
+    "name": "new_company",
+    "is_ours": 0
+  },
+  {
+    "id": 9,
+    "name": "some",
+    "is_ours": 0
+  }
+]

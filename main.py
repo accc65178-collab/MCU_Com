@@ -19,6 +19,17 @@ def main():
     db.initialize()
 
     app = QApplication(sys.argv)
+    # Load global stylesheet (QSS)
+    try:
+        base_dir = os.path.join(os.path.dirname(__file__), 'mcu_compare', 'ui')
+        qss_path = os.path.join(base_dir, 'styles_dark.qss')
+        if not os.path.exists(qss_path):
+            qss_path = os.path.join(base_dir, 'styles.qss')
+        if os.path.exists(qss_path):
+            with open(qss_path, 'r', encoding='utf-8') as f:
+                app.setStyleSheet(f.read())
+    except Exception:
+        pass
     window = MainWindow(db)
     window.show()
     sys.exit(app.exec())

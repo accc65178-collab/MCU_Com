@@ -1,0 +1,29 @@
+[
+  {
+    "id": 10,
+    "company_id": 9,
+    "name": "ssda",
+    "core": "rv21",
+    "core_alt": "risc",
+    "dsp_core": 0,
+    "fpu": 1,
+    "max_clock_mhz": 11,
+    "flash_kb": 22,
+    "sram_kb": 22,
+    "eeprom": 0,
+    "gpios": 22,
+    "uarts": 22,
+    "spis": 2,
+    "i2cs": 2,
+    "pwms": 22,
+    "timers": 2,
+    "dacs": 202,
+    "adcs": 22,
+    "cans": 20,
+    "power_mgmt": 1,
+    "clock_mgmt": 1,
+    "qei": 1,
+    "internal_osc": 1,
+    "security_features": 1
+  }
+]

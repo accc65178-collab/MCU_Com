@@ -1,0 +1,29 @@
+[
+  {
+    "id": 7,
+    "company_id": 3,
+    "name": "LPC55S69",
+    "core": "ARM Cortex-M33",
+    "core_alt": "FREE-RISC",
+    "dsp_core": 1,
+    "fpu": 1,
+    "max_clock_mhz": 150,
+    "flash_kb": 640,
+    "sram_kb": 320,
+    "eeprom_kb": 0,
+    "gpios": 160,
+    "uarts": 10,
+    "spis": 4,
+    "i2cs": 4,
+    "pwms": 16,
+    "timers": 10,
+    "dacs": 2,
+    "adcs": 4,
+    "cans": 2,
+    "power_mgmt": 1,
+    "clock_mgmt": 1,
+    "qei": 1,
+    "internal_osc": 1,
+    "security_features": 1
+  }
+]

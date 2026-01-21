@@ -11,32 +11,37 @@ CORE_FAMILIES = {
     'ARM Cortex-M33': 'ARM_Cortex_M',
     'ARM Cortex-M55': 'ARM_Cortex_M',
     'RISC-V': 'RISC_V',
+    'RV32IMC': 'RISC_V',
+    'RV32I': 'RISC_V',
+    'RV64I': 'RISC_V',
+    'FREE-RISC': 'RISC_V',
     'AVR': 'AVR',
     '8051': 'C51',
     'PIC': 'PIC',
 }
 
 DEFAULT_WEIGHTS: Dict[str, float] = {
-    'core': 0.18,
-    'dsp_core': 0.05,
-    'fpu': 0.05,
+    'core': 0.10,
+    'core_alt': 0.05,
+    'dsp_core': 0.02,
+    'fpu': 0.15,
     'max_clock_mhz': 0.10,
-    'flash_kb': 0.12,
-    'sram_kb': 0.10,
-    'eeprom_kb': 0.02,
-    'gpios': 0.04,
-    'uarts': 0.04,
-    'spis': 0.03,
-    'i2cs': 0.03,
-    'pwms': 0.03,
-    'timers': 0.04,
+    'flash_kb': 0.05,
+    'sram_kb': 0.05,
+    'eeprom': 0.01,
+    'gpios': 0.05,
+    'uarts': 0.05,
+    'spis': 0.05,
+    'i2cs': 0.05,
+    'pwms': 0.05,
+    'timers': 0.05,
     'dacs': 0.02,
-    'adcs': 0.07,
+    'adcs': 0.03,
     'cans': 0.03,
-    'power_mgmt': 0.01,
-    'clock_mgmt': 0.01,
-    'qei': 0.02,
-    'internal_osc': 0.01,
+    'power_mgmt': 0.03,
+    'clock_mgmt': 0.03,
+    'qei': 0.04,
+    'internal_osc': 0.04,
     'security_features': 0.05,
 }
 
@@ -76,7 +81,7 @@ def ratio_similarity(x: float, y: float) -> float:
 
 
 def feature_similarity(feature: str, a: Any, b: Any) -> float:
-    if feature == 'core':
+    if feature in ('core', 'core_alt'):
         return core_similarity(str(a), str(b))
     try:
         xa = float(a)

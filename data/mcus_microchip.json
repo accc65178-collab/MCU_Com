@@ -1,0 +1,29 @@
+[
+  {
+    "id": 6,
+    "company_id": 4,
+    "name": "ATSAMD21G18",
+    "core": "ARM Cortex-M0+",
+    "core_alt": "FREE-RISC",
+    "dsp_core": 0,
+    "fpu": 0,
+    "max_clock_mhz": 48,
+    "flash_kb": 256,
+    "sram_kb": 32,
+    "eeprom_kb": 0,
+    "gpios": 52,
+    "uarts": 6,
+    "spis": 2,
+    "i2cs": 2,
+    "pwms": 6,
+    "timers": 6,
+    "dacs": 1,
+    "adcs": 1,
+    "cans": 0,
+    "power_mgmt": 1,
+    "clock_mgmt": 1,
+    "qei": 0,
+    "internal_osc": 1,
+    "security_features": 0
+  }
+]
