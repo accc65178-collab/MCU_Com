@@ -1,0 +1,29 @@
+[
+  {
+    "id": "89",
+    "company_id": "17",
+    "name": "BCM2837RIFBG",
+    "core": "ARM Cortex-A53",
+    "core_mark": 120,
+    "dsp_core": 1,
+    "fpu": 1,
+    "max_clock_mhz": 1400.0,
+    "flash_kb": 0,
+    "sram_kb": 1024.0,
+    "eeprom": 0,
+    "gpios": 54,
+    "uarts": 1,
+    "spis": 1,
+    "i2cs": 1,
+    "pwms": 2,
+    "timers": 3,
+    "dacs": 0,
+    "adcs": 0,
+    "cans": 0,
+    "power_mgmt": 1,
+    "clock_mgmt": 1,
+    "qei": 0,
+    "internal_osc": 1,
+    "security_features": 1
+  }
+]

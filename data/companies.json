@@ -11,37 +11,77 @@
   },
   {
     "id": 3,
-    "name": "NXP",
+    "name": "NXP/Freescale",
     "is_ours": 0
   },
   {
     "id": 4,
-    "name": "Microchip",
-    "is_ours": 0
-  },
-  {
-    "id": 5,
-    "name": "Renesas",
-    "is_ours": 0
-  },
-  {
-    "id": 6,
-    "name": "TI",
-    "is_ours": 0
-  },
-  {
-    "id": 7,
-    "name": "Nordic",
+    "name": "Microchip Technology",
     "is_ours": 0
   },
   {
     "id": 8,
-    "name": "new_company",
+    "name": "Silicon Laboratories",
     "is_ours": 0
   },
   {
-    "id": 9,
-    "name": "some",
+    "id": 10,
+    "name": "Nvidia",
+    "is_ours": 0
+  },
+  {
+    "id": 11,
+    "name": "Maxim Integrated",
+    "is_ours": 0
+  },
+  {
+    "id": 12,
+    "name": "Texas Instruments",
+    "is_ours": 0
+  },
+  {
+    "id": 13,
+    "name": "Xilinx / AMD",
+    "is_ours": 0
+  },
+  {
+    "id": 14,
+    "name": "Espressif Systems",
+    "is_ours": 0
+  },
+  {
+    "id": 15,
+    "name": "Renesas Electronics",
+    "is_ours": 0
+  },
+  {
+    "id": 16,
+    "name": "TERN Inc.",
+    "is_ours": 0
+  },
+  {
+    "id": 17,
+    "name": "Broadcom",
+    "is_ours": 0
+  },
+  {
+    "id": 18,
+    "name": "Raspberry Pi Foundation",
+    "is_ours": 0
+  },
+  {
+    "id": 19,
+    "name": "STC Micro",
+    "is_ours": 0
+  },
+  {
+    "id": 20,
+    "name": "Motorola (Legacy)",
+    "is_ours": 0
+  },
+  {
+    "id": 21,
+    "name": "Versa Logic",
     "is_ours": 0
   }
 ]

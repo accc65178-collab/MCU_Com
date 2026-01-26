@@ -22,7 +22,7 @@ CORE_FAMILIES = {
 
 DEFAULT_WEIGHTS: Dict[str, float] = {
     'core': 0.10,
-    'core_alt': 0.05,
+    'core_mark': 0,
     'dsp_core': 0.02,
     'fpu': 0.15,
     'max_clock_mhz': 0.10,
@@ -46,10 +46,9 @@ DEFAULT_WEIGHTS: Dict[str, float] = {
 }
 
 CATEGORIES = [
-    (90.0, 'Direct'),
-    (75.0, 'Near'),
-    (60.0, 'Partial'),
-    (0.0, 'No match')
+    (75.0, 'Best Match'),
+    (65.0, 'Partial'),
+    (0.0, 'No Match')
 ]
 
 
@@ -80,15 +79,47 @@ def ratio_similarity(x: float, y: float) -> float:
     return min(x, y) / max(x, y)
 
 
-def feature_similarity(feature: str, a: Any, b: Any) -> float:
-    if feature in ('core', 'core_alt'):
-        return core_similarity(str(a), str(b))
+def coverage_similarity(requirement: float, offer: float) -> float:
+    """Directional similarity: how well 'offer' (OUR MCU) covers 'requirement' (competitor).
+    - If offer >= requirement, full score 1.0 (we meet or exceed).
+    - If offer < requirement, proportional score offer/requirement.
+    Handles zeros: requirement==0 and offer>0 => 1.0; both 0 => 1.0.
+    """
     try:
-        xa = float(a)
-        xb = float(b)
+        req = float(requirement or 0)
+        off = float(offer or 0)
     except Exception:
         return 0.0
-    return ratio_similarity(xa, xb)
+    if req <= 0:
+        # Competitor requires none; any offer is OK and considered fully covering
+        return 1.0
+    if off <= 0:
+        return 0.0
+    return min(1.0, off / req)
+
+
+def feature_similarity(feature: str, comp_val: Any, our_val: Any) -> float:
+    # Core comparison remains categorical/family-based
+    if feature == 'core':
+        return core_similarity(str(comp_val), str(our_val))
+    # Ordinal/numeric fields use directional coverage
+    if feature == 'core_mark':
+        return coverage_similarity(comp_val, our_val)
+    if feature == 'fpu':
+        # Higher FPU level is better: 0=None, 1=Single, 2=Double
+        try:
+            cf = float(comp_val or 0)
+            of = float(our_val or 0)
+        except Exception:
+            return 0.0
+        return coverage_similarity(cf, of)
+    # Booleans and counts also treated as coverage
+    try:
+        xa = float(comp_val or 0)
+        xb = float(our_val or 0)
+    except Exception:
+        return 0.0
+    return coverage_similarity(xa, xb)
 
 
 def weighted_similarity(a: Dict[str, Any], b: Dict[str, Any], weights: Dict[str, float] = None) -> Tuple[float, Dict[str, float]]:

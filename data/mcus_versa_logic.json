@@ -1,0 +1,29 @@
+[
+  {
+    "id": "99",
+    "company_id": "21",
+    "name": "VERSA LOGIC EPU 3312",
+    "core": "x86 Embedded Processor",
+    "core_mark": 150,
+    "dsp_core": 1,
+    "fpu": 1,
+    "max_clock_mhz": 1000.0,
+    "flash_kb": 0,
+    "sram_kb": 0,
+    "eeprom": 0,
+    "gpios": 32,
+    "uarts": 2,
+    "spis": 1,
+    "i2cs": 1,
+    "pwms": 2,
+    "timers": 4,
+    "dacs": 0,
+    "adcs": 0,
+    "cans": 0,
+    "power_mgmt": 1,
+    "clock_mgmt": 1,
+    "qei": 0,
+    "internal_osc": 1,
+    "security_features": 1
+  }
+]

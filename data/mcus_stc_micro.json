@@ -1,0 +1,29 @@
+[
+  {
+    "id": "95",
+    "company_id": "19",
+    "name": "STC12C5A60S2",
+    "core": "8-bit 8051",
+    "core_mark": 33,
+    "dsp_core": 0,
+    "fpu": 0,
+    "max_clock_mhz": 35.0,
+    "flash_kb": 60.0,
+    "sram_kb": 2.0,
+    "eeprom": 0,
+    "gpios": 40,
+    "uarts": 1,
+    "spis": 0,
+    "i2cs": 0,
+    "pwms": 2,
+    "timers": 2,
+    "dacs": 0,
+    "adcs": 1,
+    "cans": 0,
+    "power_mgmt": 1,
+    "clock_mgmt": 1,
+    "qei": 0,
+    "internal_osc": 1,
+    "security_features": 0
+  }
+]

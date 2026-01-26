@@ -1,10 +1,10 @@
 from typing import Dict, Any
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QComboBox, QSpinBox,
-    QPushButton, QWidget, QFormLayout, QTableWidget, QTableWidgetItem, QHeaderView, QCheckBox, QProgressBar, QStackedLayout
+    QPushButton, QWidget, QFormLayout, QTableWidget, QTableWidgetItem, QHeaderView, QCheckBox, QProgressBar, QStackedLayout, QScrollArea
 )
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QPainter, QGuiApplication
+from PySide6.QtGui import QPainter, QGuiApplication, QIntValidator, QPalette, QDoubleValidator
 from PySide6.QtCharts import QChart, QChartView, QPieSeries
 
 from mcu_compare.engine.similarity import weighted_similarity, categorize
@@ -12,12 +12,12 @@ from mcu_compare.engine.similarity import weighted_similarity, categorize
 
 FEATURE_FIELDS = [
     ('core', 'Core', 'text'),
-    ('core_alt', 'Core (Alt)', 'text'),
+    ('core_mark', 'Core mark', 'int'),
     ('dsp_core', 'DSP core', 'bool'),
     ('fpu', 'FPU', 'enum_fpu'),
-    ('max_clock_mhz', 'Max clock (MHz)', 'int'),
-    ('flash_kb', 'Flash (KB)', 'int'),
-    ('sram_kb', 'SRAM (KB)', 'int'),
+    ('max_clock_mhz', 'Max clock (MHz)', 'float'),
+    ('flash_kb', 'Flash (KB)', 'float'),
+    ('sram_kb', 'SRAM (KB)', 'float'),
     ('eeprom', 'EEPROM', 'bool'),
     ('gpios', 'GPIOs', 'int'),
     ('uarts', 'UART/USART', 'int'),
@@ -61,8 +61,15 @@ class AddMCUDialog(QDialog):
             if typ == 'text':
                 w = QLineEdit()
             elif typ == 'int':
-                w = QSpinBox()
-                w.setRange(0, 100000)
+                w = QLineEdit()
+                w.setValidator(QIntValidator(0, 100000, self))
+                w.setText('0')
+            elif typ == 'float':
+                w = QLineEdit()
+                dv = QDoubleValidator(0.0, 1e9, 3, self)
+                dv.setNotation(QDoubleValidator.StandardNotation)
+                w.setValidator(dv)
+                w.setText('0')
             elif typ == 'bool':
                 w = QCheckBox()
             elif typ == 'enum_fpu':
@@ -95,7 +102,15 @@ class AddMCUDialog(QDialog):
             if typ == 'text':
                 payload[key] = str(self.inputs[key].text()).strip()
             elif typ == 'int':
-                payload[key] = int(self.inputs[key].value())
+                try:
+                    payload[key] = int(self.inputs[key].text() or '0')
+                except Exception:
+                    payload[key] = 0
+            elif typ == 'float':
+                try:
+                    payload[key] = float(self.inputs[key].text() or '0')
+                except Exception:
+                    payload[key] = 0.0
             elif typ == 'bool':
                 payload[key] = 1 if self.inputs[key].isChecked() else 0
             elif typ == 'enum_fpu':
@@ -116,7 +131,14 @@ class AddNcoEntryDialog(QDialog):
         self._build_ui()
 
     def _build_ui(self):
-        v = QVBoxLayout(self)
+        # Wrap full content in a scroll area so the whole dialog scrolls, not the table
+        outer = QVBoxLayout(self)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        content = QWidget()
+        v = QVBoxLayout(content)
+        scroll.setWidget(content)
+        outer.addWidget(scroll)
         form = QFormLayout()
 
         # Competitor company selector
@@ -199,7 +221,41 @@ class ViewNcoEntriesDialog(QDialog):
             table.setItem(i, 2, QTableWidgetItem(str(r.get('quantity', 0))))
             table.setItem(i, 3, QTableWidgetItem(mcu_name.get(r.get('our_mcu_id'), '')))
 
+        # Make the table display all rows with no internal scrolling; the dialog scrolls instead
+        table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        table.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        table.resizeColumnsToContents()
+        table.resizeRowsToContents()
+        try:
+            total_h = table.horizontalHeader().height() + sum(table.rowHeight(r) for r in range(table.rowCount())) + 2
+            table.setMinimumHeight(total_h)
+            table.setMaximumHeight(total_h)
+        except Exception:
+            pass
+        # Make the table display all rows with no internal scrolling; the dialog scrolls instead
+        table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        table.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        table.resizeColumnsToContents()
+        table.resizeRowsToContents()
+        try:
+            total_h = table.horizontalHeader().height() + sum(table.rowHeight(r) for r in range(table.rowCount())) + 2
+            table.setMinimumHeight(total_h)
+            table.setMaximumHeight(total_h)
+        except Exception:
+            pass
+        # Disable internal scrolling so the outer dialog scrolls instead
+        table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        table.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        table.resizeColumnsToContents()
+        table.resizeRowsToContents()
+        try:
+            t_height = table.horizontalHeader().height() + sum(table.rowHeight(r) for r in range(table.rowCount())) + 2
+            table.setMinimumHeight(t_height)
+            table.setMaximumHeight(t_height)
+        except Exception:
+            pass
         v.addWidget(table)
+
 
         btn_row = QHBoxLayout()
         close_btn = QPushButton('Close')
@@ -326,12 +382,12 @@ class EditMCUDialog(QDialog):
             if typ == 'text':
                 w = QLineEdit(str(val or ''))
             elif typ == 'int':
-                w = QSpinBox()
-                w.setRange(0, 100000)
+                w = QLineEdit()
+                w.setValidator(QIntValidator(0, 100000, self))
                 try:
-                    w.setValue(int(val or 0))
+                    w.setText(str(int(val or 0)))
                 except Exception:
-                    w.setValue(0)
+                    w.setText('0')
             elif typ == 'bool':
                 w = QCheckBox()
                 w.setChecked(int(val or 0) == 1)
@@ -368,7 +424,10 @@ class EditMCUDialog(QDialog):
             if typ == 'text':
                 payload[key] = str(self.inputs[key].text()).strip()
             elif typ == 'int':
-                payload[key] = int(self.inputs[key].value())
+                try:
+                    payload[key] = int(self.inputs[key].text() or '0')
+                except Exception:
+                    payload[key] = 0
             elif typ == 'bool':
                 payload[key] = 1 if self.inputs[key].isChecked() else 0
             elif typ == 'enum_fpu':
@@ -459,20 +518,23 @@ class DetailsDialog(QDialog):
         overall_bar.setValue(int(round(overall)))
         overall_bar.setFormat(f"Overall Match: {overall:.1f}%")
         overall_bar.setTextVisible(True)
+        # Make percentage highly visible
+        overall_bar.setStyleSheet(
+            "QProgressBar { font-size: 22px; font-weight: 700; padding: 2px; }"
+        )
+        overall_bar.setMinimumHeight(34)
         v.addWidget(overall_bar)
 
-        # Donut chart (Match vs Gap)
+        # Compact donut chart (Match vs Gap) shown below the overall bar
         series = QPieSeries()
         match_val = max(0.0, min(100.0, overall))
         gap_val = 100.0 - match_val
         series.append('Match', match_val)
         series.append('Gap', gap_val)
-        # Donut hole
         series.setHoleSize(0.55)
-        # Optional slice colors align with theme
         if series.slices():
             s0 = series.slices()[0]
-            s0.setLabelVisible(True)
+            s0.setLabelVisible(False)
             s0.setBrush(Qt.green)
             s1 = series.slices()[1]
             s1.setLabelVisible(False)
@@ -484,23 +546,32 @@ class DetailsDialog(QDialog):
         chart.setTitle("")
         chart_view = QChartView(chart)
         chart_view.setRenderHint(QPainter.Antialiasing)
-        # Overlay percentage text centered in donut
         overlay = QWidget()
         stack = QStackedLayout(overlay)
         stack.setContentsMargins(0, 0, 0, 0)
-        # Show all stacked widgets so label overlays the chart
         stack.setStackingMode(QStackedLayout.StackingMode.StackAll)
         stack.addWidget(chart_view)
-        pct_label = QLabel(f"{overall:.1f}%")
+        pct_label = QLabel(f"Overall Match: {overall:.1f}%")
         pct_label.setAlignment(Qt.AlignCenter)
-        pct_label.setStyleSheet("font-size: 28px; font-weight: 600;")
+        text_color = self.palette().color(QPalette.WindowText).name()
+        bg = 'rgba(0,0,0,0.35)' if self.palette().color(QPalette.Window).value() > 128 else 'rgba(255,255,255,0.18)'
+        border = '#3b82f6'
+        pct_label.setStyleSheet(
+            f"font-size: 18px; font-weight: 600; color: {text_color}; "
+            f"background: {bg}; border: 1px solid {border}; border-radius: 9px; padding: 4px 10px;"
+        )
         pct_label.setAttribute(Qt.WA_TransparentForMouseEvents, True)
         stack.addWidget(pct_label)
-        # ensure the overlay area is tall enough for chart visibility
-        overlay.setMinimumHeight(420)
+        from PySide6.QtWidgets import QSizePolicy
+        overlay.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        chart_view.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        pct_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        stack.setAlignment(pct_label, Qt.AlignCenter)
+        overlay.setMinimumHeight(200)
+        overlay.setMaximumHeight(220)
         v.addWidget(overlay)
 
-        # Summary bullets: where OUR MCU is better and where it lacks (placed above table for visibility)
+        # Prepare summary bullets data (will render AFTER the table)
         def numeric(val):
             try:
                 return float(val)
@@ -559,47 +630,11 @@ class DetailsDialog(QDialog):
                     worse.append(f"FPU: {names.get(of, of)} vs {names.get(cf, cf)}")
             # Skip textual cores and optional alt core in bullets
 
-        from PySide6.QtWidgets import QFrame
-        if better:
-            better_html = """
-            <div style='font-size:14px;'>
-              <div style='font-weight:600; color:#2e7d32; margin-bottom:6px;'>Areas OUR MCU is better</div>
-              <ul style='margin:0 0 0 18px; padding:0;'>
-            """ + "".join(f"<li>{item}</li>" for item in better) + """
-              </ul>
-            </div>
-            """
-            frame_better = QFrame()
-            frame_better.setFrameShape(QFrame.StyledPanel)
-            frame_better.setStyleSheet("QFrame { background: rgba(46, 125, 50, 0.10); border: 1px solid rgba(46,125,50,0.35); border-radius: 6px; padding: 8px; }")
-            lbl_better = QLabel(better_html)
-            lbl_better.setWordWrap(True)
-            fb = QVBoxLayout(frame_better)
-            fb.setContentsMargins(8,8,8,8)
-            fb.addWidget(lbl_better)
-            v.addWidget(frame_better)
-        if worse:
-            worse_html = """
-            <div style='font-size:14px;'>
-              <div style='font-weight:600; color:#c62828; margin-bottom:6px;'>Areas OUR MCU lacks</div>
-              <ul style='margin:0 0 0 18px; padding:0;'>
-            """ + "".join(f"<li>{item}</li>" for item in worse) + """
-              </ul>
-            </div>
-            """
-            frame_worse = QFrame()
-            frame_worse.setFrameShape(QFrame.StyledPanel)
-            frame_worse.setStyleSheet("QFrame { background: rgba(198, 40, 40, 0.10); border: 1px solid rgba(198,40,40,0.35); border-radius: 6px; padding: 8px; }")
-            lbl_worse = QLabel(worse_html)
-            lbl_worse.setWordWrap(True)
-            fw = QVBoxLayout(frame_worse)
-            fw.setContentsMargins(8,8,8,8)
-            fw.addWidget(lbl_worse)
-            v.addWidget(frame_worse)
+        # (Bullets will be added after the table is rendered)
 
         # Feature comparison table
         table = QTableWidget(len(FEATURE_FIELDS), 4)
-        table.setHorizontalHeaderLabels(['Feature', 'Competitor', 'OUR MCU', 'Similarity'])
+        table.setHorizontalHeaderLabels(['Feature', 'Competitor', ours.get('name', 'OUR MCU'), 'Similarity'])
         table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         from mcu_compare.engine.similarity import DEFAULT_WEIGHTS
@@ -627,6 +662,47 @@ class DetailsDialog(QDialog):
             table.setCellWidget(row, 3, sim_bar)
 
         v.addWidget(table)
+        # Summary bullets placed BELOW the table
+        from PySide6.QtWidgets import QFrame
+        if better:
+            better_html = """
+            <div style='font-size:12px;'>
+              <div style='font-weight:600; color:#2e7d32; margin-bottom:4px;'>Areas OUR MCU is better</div>
+              <ul style='margin:0 0 0 16px; padding:0;'>
+            """ + "".join(f"<li>{item}</li>" for item in better) + """
+              </ul>
+            </div>
+            """
+            frame_better = QFrame()
+            frame_better.setFrameShape(QFrame.StyledPanel)
+            frame_better.setStyleSheet("QFrame { background: rgba(46, 125, 50, 0.10); border: 1px solid rgba(46,125,50,0.35); border-radius: 6px; padding: 6px; }")
+            lbl_better = QLabel(better_html)
+            lbl_better.setWordWrap(True)
+            fb = QVBoxLayout(frame_better)
+            fb.setContentsMargins(6,6,6,6)
+            fb.addWidget(lbl_better)
+            # Cap height to keep chart visible; allow label to scroll if needed
+            frame_better.setMaximumHeight(160)
+            v.addWidget(frame_better)
+        if worse:
+            worse_html = """
+            <div style='font-size:12px;'>
+              <div style='font-weight:600; color:#c62828; margin-bottom:4px;'>Areas OUR MCU lacks</div>
+              <ul style='margin:0 0 0 16px; padding:0;'>
+            """ + "".join(f"<li>{item}</li>" for item in worse) + """
+              </ul>
+            </div>
+            """
+            frame_worse = QFrame()
+            frame_worse.setFrameShape(QFrame.StyledPanel)
+            frame_worse.setStyleSheet("QFrame { background: rgba(198, 40, 40, 0.10); border: 1px solid rgba(198,40,40,0.35); border-radius: 6px; padding: 6px; }")
+            lbl_worse = QLabel(worse_html)
+            lbl_worse.setWordWrap(True)
+            fw = QVBoxLayout(frame_worse)
+            fw.setContentsMargins(6,6,6,6)
+            fw.addWidget(lbl_worse)
+            frame_worse.setMaximumHeight(120)
+            v.addWidget(frame_worse)
 
         btn_row = QHBoxLayout()
         close_btn = QPushButton('Close')

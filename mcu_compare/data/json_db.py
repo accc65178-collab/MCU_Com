@@ -248,6 +248,63 @@ class JsonDatabase:
             self._save_mcus(new_id, [])
         return new_id
 
+    def delete_mcu(self, mcu_id: int) -> bool:
+        # Find the MCU and its company
+        target = self.get_mcu_by_id(mcu_id)
+        if not target:
+            return False
+        company_id = int(target.get('company_id'))
+        mcus = self._load_mcus(company_id)
+        new_mcus = [m for m in mcus if int(m.get('id')) != int(mcu_id)]
+        if len(new_mcus) == len(mcus):
+            return False
+        self._save_mcus(company_id, new_mcus)
+        # Clean up NCO entries that reference this competitor MCU
+        rows = self._load_nco()
+        changed = False
+        kept = []
+        for r in rows:
+            if int(r.get('comp_mcu_id', -1)) == int(mcu_id):
+                changed = True
+                continue
+            # If our_mcu_id matches, keep but null it
+            if r.get('our_mcu_id') is not None and int(r.get('our_mcu_id') or -1) == int(mcu_id):
+                r['our_mcu_id'] = None
+                changed = True
+            kept.append(r)
+        if changed:
+            self._save_nco(kept)
+        return True
+
+    def update_company_name(self, company_id: int, new_name: str) -> bool:
+        companies = self._load_companies()
+        # Prevent duplicate names
+        for c in companies:
+            if c['name'] == new_name and int(c.get('id')) != int(company_id):
+                return False
+        # Determine old/new file paths for MCUs to migrate if needed
+        comp = self.get_company_by_id(company_id)
+        if not comp:
+            return False
+        old_slug = self._slugify(comp.get('name', ''), company_id)
+        new_slug = self._slugify(new_name, company_id)
+        old_path = os.path.join(self.data_dir, f'mcus_{old_slug}.json')
+        new_path = os.path.join(self.data_dir, f'mcus_{new_slug}.json')
+        # Update name in companies list
+        for c in companies:
+            if int(c.get('id')) == int(company_id):
+                c['name'] = new_name
+        self._save_companies(companies)
+        # If old MCUs file exists and new one doesn't, rename it
+        try:
+            if os.path.exists(old_path) and (old_path != new_path):
+                if not os.path.exists(new_path):
+                    os.rename(old_path, new_path)
+        except Exception:
+            # Ignore file move failures; data will still be accessible via legacy fallback if present
+            pass
+        return True
+
     def list_mcus_by_company(self, company_id: int) -> List[Dict[str, Any]]:
         mcus = self._load_mcus(company_id)
         return sorted([m for m in mcus if m.get('company_id') == company_id], key=lambda m: m['name'])
@@ -265,6 +322,27 @@ class JsonDatabase:
         our_id = self.get_our_company_id()
         return self.list_mcus_by_company(our_id)
 
+    def delete_company(self, company_id: int) -> bool:
+        # Remove company from list
+        companies = self._load_companies()
+        before = len(companies)
+        companies = [c for c in companies if int(c.get('id')) != int(company_id)]
+        if len(companies) == before:
+            return False
+        self._save_companies(companies)
+        # Delete its MCU file if present
+        try:
+            fp = self._mcus_file(company_id)
+            if os.path.exists(fp):
+                os.remove(fp)
+        except Exception:
+            pass
+        # Remove related NCO entries
+        rows = self._load_nco()
+        rows = [r for r in rows if int(r.get('company_id', -1)) != int(company_id)]
+        self._save_nco(rows)
+        return True
+
     def insert_mcu(self, company_id: int, data: Dict[str, Any]) -> int:
         mcus = self._load_mcus(company_id)
         new_id = self._next_global_mcu_id()
@@ -272,7 +350,7 @@ class JsonDatabase:
             "id": new_id,
             "company_id": company_id,
         }
-        for f in ['name','core','core_alt','dsp_core','fpu','max_clock_mhz','flash_kb','sram_kb','eeprom','gpios','uarts','spis','i2cs','pwms','timers','dacs','adcs','cans','power_mgmt','clock_mgmt','qei','internal_osc','security_features']:
+        for f in ['name','core','core_mark','dsp_core','fpu','max_clock_mhz','flash_kb','sram_kb','eeprom','gpios','uarts','spis','i2cs','pwms','timers','dacs','adcs','cans','power_mgmt','clock_mgmt','qei','internal_osc','security_features']:
             record[f] = data.get(f, '' if f in ['name','core'] else 0)
         mcus.append(record)
         self._save_mcus(company_id, mcus)
@@ -286,7 +364,7 @@ class JsonDatabase:
         company_id = int(target.get('company_id'))
         mcus = self._load_mcus(company_id)
         updated = False
-        fields = ['name','core','core_alt','dsp_core','fpu','max_clock_mhz','flash_kb','sram_kb','eeprom','gpios','uarts','spis','i2cs','pwms','timers','dacs','adcs','cans','power_mgmt','clock_mgmt','qei','internal_osc','security_features']
+        fields = ['name','core','core_mark','dsp_core','fpu','max_clock_mhz','flash_kb','sram_kb','eeprom','gpios','uarts','spis','i2cs','pwms','timers','dacs','adcs','cans','power_mgmt','clock_mgmt','qei','internal_osc','security_features']
         for idx, rec in enumerate(mcus):
             if rec.get('id') == mcu_id:
                 # Update provided fields only
@@ -304,7 +382,7 @@ class JsonDatabase:
 
     def feature_columns(self) -> List[str]:
         return [
-            'core','core_alt','dsp_core','fpu','max_clock_mhz','flash_kb','sram_kb','eeprom','gpios','uarts','spis','i2cs','pwms','timers','dacs','adcs','cans','power_mgmt','clock_mgmt','qei','internal_osc','security_features'
+            'core','core_mark','dsp_core','fpu','max_clock_mhz','flash_kb','sram_kb','eeprom','gpios','uarts','spis','i2cs','pwms','timers','dacs','adcs','cans','power_mgmt','clock_mgmt','qei','internal_osc','security_features'
         ]
 
     def all_mcus(self) -> List[Dict[str, Any]]:
@@ -364,6 +442,14 @@ class JsonDatabase:
             self._save_nco(rows)
         return updated
 
+    def delete_nco_entry(self, entry_id: int) -> bool:
+        rows = self._load_nco()
+        new_rows = [r for r in rows if int(r.get('id', -1)) != int(entry_id)]
+        if len(new_rows) == len(rows):
+            return False
+        self._save_nco(new_rows)
+        return True
+
     # ----- NCO Orgs public API -----
     def list_nco_orgs(self) -> List[Dict[str, Any]]:
         return self._load_nco_orgs()
@@ -379,6 +465,34 @@ class JsonDatabase:
         self._save_nco_orgs(rows)
         return new_id
 
+    def update_nco_org(self, org_id: int, name: str) -> bool:
+        rows = self._load_nco_orgs()
+        # Prevent duplicate names
+        for r in rows:
+            if r.get('name') == name and int(r.get('id')) != int(org_id):
+                return False
+        updated = False
+        for r in rows:
+            if int(r.get('id')) == int(org_id):
+                r['name'] = name
+                updated = True
+                break
+        if updated:
+            self._save_nco_orgs(rows)
+        return updated
+
+    def delete_nco_org(self, org_id: int) -> bool:
+        rows = self._load_nco_orgs()
+        new_rows = [r for r in rows if int(r.get('id')) != int(org_id)]
+        if len(new_rows) == len(rows):
+            return False
+        self._save_nco_orgs(new_rows)
+        # Also delete entries belonging to this org
+        nco = self._load_nco()
+        nco = [r for r in nco if int(r.get('org_id', -1)) != int(org_id)]
+        self._save_nco(nco)
+        return True
+
     # Helpers
     def get_company_by_id(self, company_id: int) -> Optional[Dict[str, Any]]:
         for c in self._load_companies():
@@ -388,12 +502,20 @@ class JsonDatabase:
 
     def _normalize_mcu(self, rec: Dict[str, Any]) -> Dict[str, Any]:
         r = dict(rec)
+        # Ensure company_id is an int
+        try:
+            r['company_id'] = int(r.get('company_id', 0))
+        except Exception:
+            r['company_id'] = 0
         if 'eeprom' not in r:
             kb = r.get('eeprom_kb', 0)
             try:
                 r['eeprom'] = 1 if int(kb) > 0 else 0
             except Exception:
                 r['eeprom'] = 0
-        if 'core_alt' not in r:
-            r['core_alt'] = ''
+        if 'core_mark' not in r:
+            try:
+                r['core_mark'] = int(r.get('core_mark', 0))
+            except Exception:
+                r['core_mark'] = 0
         return r

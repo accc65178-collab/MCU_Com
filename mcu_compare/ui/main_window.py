@@ -15,10 +15,9 @@ from .dialogs import AddMCUDialog, DetailsDialog, AddCompanyDialog, AddNcoEntryD
 
 
 CATEGORY_COLORS = {
-    'Direct': '#2e7d32',
-    'Near': '#1565c0',
+    'Best Match': '#2e7d32',
     'Partial': '#f9a825',
-    'No match': '#c62828'
+    'No Match': '#c62828'
 }
 
 
@@ -55,6 +54,37 @@ class MainWindow(QMainWindow):
         act_add_company = QAction('Add Company', self)
         act_add_company.triggered.connect(self._open_add_company)
         data_menu.addAction(act_add_company)
+        act_rename_company = QAction('Rename Company', self)
+        act_rename_company.triggered.connect(self._rename_company)
+        data_menu.addAction(act_rename_company)
+        act_delete_company = QAction('Delete Company', self)
+        act_delete_company.triggered.connect(self._delete_company)
+        data_menu.addAction(act_delete_company)
+
+        # NCO/Commission submenu
+        nco_menu = data_menu.addMenu('NCO/Commission')
+        act_nco_add_org = QAction('Add Org', self)
+        act_nco_add_org.triggered.connect(self._add_nco_org)
+        nco_menu.addAction(act_nco_add_org)
+        act_nco_rename_org = QAction('Rename Org', self)
+        act_nco_rename_org.triggered.connect(self._rename_nco_org)
+        nco_menu.addAction(act_nco_rename_org)
+        act_nco_delete_org = QAction('Delete Org', self)
+        act_nco_delete_org.triggered.connect(self._delete_nco_org)
+        nco_menu.addAction(act_nco_delete_org)
+        nco_menu.addSeparator()
+        act_nco_add_entry = QAction('Add Entry', self)
+        act_nco_add_entry.triggered.connect(self._open_nco_add)
+        nco_menu.addAction(act_nco_add_entry)
+        act_nco_edit_selected = QAction('Edit Selected', self)
+        act_nco_edit_selected.triggered.connect(self._edit_selected_nco)
+        nco_menu.addAction(act_nco_edit_selected)
+        act_nco_delete_entry = QAction('Delete Selected Entry', self)
+        act_nco_delete_entry.triggered.connect(self._delete_selected_nco)
+        nco_menu.addAction(act_nco_delete_entry)
+        act_nco_view = QAction('View Entries', self)
+        act_nco_view.triggered.connect(self._open_nco_view)
+        nco_menu.addAction(act_nco_view)
 
         view_menu = menubar.addMenu('View')
         theme_menu = view_menu.addMenu('Theme')
@@ -97,6 +127,13 @@ class MainWindow(QMainWindow):
         edit_selected_btn = QPushButton('Edit Selected')
         edit_selected_btn.clicked.connect(self._edit_selected_mcu)
         row.addWidget(edit_selected_btn)
+        delete_selected_btn = QPushButton('Delete Selected')
+        delete_selected_btn.clicked.connect(self._delete_selected_mcu)
+        row.addWidget(delete_selected_btn)
+        # Category counts summary
+        self.cat_counts_label = QLabel('')
+        self.cat_counts_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        row.addWidget(self.cat_counts_label, 2)
 
         # Spacer ends toolbar
 
@@ -111,6 +148,8 @@ class MainWindow(QMainWindow):
         self.table.setAlternatingRowColors(True)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.cellDoubleClicked.connect(self._open_details)
+        # Enable interactive sorting
+        self.table.setSortingEnabled(True)
         compare_v.addWidget(self.table)
         # Add compare tab
         tabs.addTab(compare_page, 'Compare')
@@ -121,11 +160,13 @@ class MainWindow(QMainWindow):
     def _load_companies(self):
         # Only filter companies when search mode is Company
         query = self.search_edit.text() if hasattr(self, 'search_edit') else ''
-        search = query if self.search_mode.currentText() == 'Company' else ''
+        search = (query or '').lower() if self.search_mode.currentText() == 'Company' else ''
         companies = [c for c in self.db.list_companies(search) if not c['is_ours']]
         current_id = self.company_combo.currentData() if self.company_combo.count() else None
         self.company_combo.blockSignals(True)
         self.company_combo.clear()
+        # Add an "All Companies" option to view every competitor's MCUs
+        self.company_combo.addItem('All Companies', None)
         for c in companies:
             self.company_combo.addItem(c['name'], c['id'])
         self.company_combo.blockSignals(False)
@@ -136,6 +177,7 @@ class MainWindow(QMainWindow):
         if idx >= 0:
             self.company_combo.setCurrentIndex(idx)
         elif self.company_combo.count() > 0:
+            # Default to All Companies
             self.company_combo.setCurrentIndex(0)
         else:
             # No companies match; clear the table
@@ -168,18 +210,18 @@ class MainWindow(QMainWindow):
             self.table.setRowCount(0)
             return
         company_id = self.company_combo.currentData()
-        query = self.search_edit.text() if hasattr(self, 'search_edit') else ''
+        query = (self.search_edit.text() or '') if hasattr(self, 'search_edit') else ''
         mode = self.search_mode.currentText()
-        if company_id is None and not (mode == 'MCU' and query):
-            # No selected company and not doing MCU search; clear
-            self.table.setRowCount(0)
-            return
         our_mcus_rows = self.db.list_our_mcus()
         our_mcus = [dict(r) for r in our_mcus_rows]
         feat_cols = self.db.feature_columns()
-        q = query.lower()
+        q = (query or '')
+        import re
+        def _norm(s: str) -> str:
+            return re.sub(r"[^a-z0-9]", "", (s or '').lower())
+        qn = _norm(q)
         if mode == 'MCU' and q:
-            # Search across all competitor companies
+            # Global MCU search across all competitor companies
             mcus_all = []
             all_companies = self.db.list_companies('')
             companies_map = {c['id']: c['name'] for c in all_companies}
@@ -187,17 +229,24 @@ class MainWindow(QMainWindow):
                 if c.get('is_ours'):
                     continue
                 mcus_all.extend([dict(r) for r in self.db.list_mcus_by_company(c['id'])])
-        elif mode == 'Company':
-            mcus_all = [dict(r) for r in self.db.list_mcus_by_company(company_id)]
-            companies_map = {company_id: next((c['name'] for c in self.db.list_companies('') if c['id']==company_id), '')}
         else:
-            # Fallback: treat as company context
-            mcus_all = [dict(r) for r in self.db.list_mcus_by_company(company_id)]
-            companies_map = {company_id: next((c['name'] for c in self.db.list_companies('') if c['id']==company_id), '')}
+            # Company context (including All Companies when company_id is None)
+            all_companies = self.db.list_companies('')
+            if company_id is None:
+                mcus_all = []
+                companies_map = {c['id']: c['name'] for c in all_companies}
+                for c in all_companies:
+                    if c.get('is_ours'):
+                        continue
+                    mcus_all.extend([dict(r) for r in self.db.list_mcus_by_company(c['id'])])
+            else:
+                mcus_all = [dict(r) for r in self.db.list_mcus_by_company(company_id)]
+                companies_map = {company_id: next((c['name'] for c in all_companies if c['id']==company_id), '')}
 
-        mcus = [m for m in mcus_all if (q in m.get('name', '').lower())] if (mode == 'MCU' and q) else mcus_all
+        mcus = [m for m in mcus_all if (qn in _norm(m.get('name', '')))] if (mode == 'MCU' and q) else mcus_all
 
         self.table.setRowCount(0)
+        counts = {'Best Match': 0, 'Partial': 0, 'No Match': 0}
         for mcu in mcus:
             # Build feature dicts
             target = {k: mcu.get(k) for k in feat_cols}
@@ -224,8 +273,17 @@ class MainWindow(QMainWindow):
             self.table.setItem(row, 2, QTableWidgetItem(best['name'] if best else '-'))
             item_score = QTableWidgetItem(f"{score:.1f}")
             item_score.setTextAlignment(Qt.AlignCenter)
+            # Ensure numeric sort on Match % using EditRole
+            item_score.setData(Qt.EditRole, float(f"{score:.4f}"))
             self.table.setItem(row, 3, item_score)
-            # Category chip as QLabel to avoid overriding row selection highlight
+            # Backing item for sorting by custom order
+            cat_item = QTableWidgetItem(category)
+            # Higher value sorts first when descending; use 2,1,0 for Best/Partial/No
+            order_map = {'Best Match': 2, 'Partial': 1, 'No Match': 0}
+            cat_item.setData(Qt.EditRole, order_map.get(category, -1))
+            cat_item.setTextAlignment(Qt.AlignCenter)
+            self.table.setItem(row, 4, cat_item)
+            # Category chip as QLabel overlay for visuals
             from PySide6.QtWidgets import QLabel
             chip = QLabel(category)
             chip.setAlignment(Qt.AlignCenter)
@@ -237,6 +295,14 @@ class MainWindow(QMainWindow):
             # Store IDs
             self.table.item(row, 1).setData(Qt.UserRole, mcu['id'])
             self.table.item(row, 2).setData(Qt.UserRole, best['id'] if best else None)
+            # Tally counts
+            if category in counts:
+                counts[category] += 1
+
+        # Update counts label
+        self.cat_counts_label.setText(
+            f"Best Match: {counts['Best Match']}   |   Partial: {counts['Partial']}   |   No Match: {counts['No Match']}"
+        )
 
     def _open_add_dialog(self):
         dlg = AddMCUDialog(self.db, self)
@@ -267,6 +333,24 @@ class MainWindow(QMainWindow):
         if dlg.exec():
             self._refresh_table()
 
+    def _delete_selected_mcu(self):
+        # Delete the selected competitor MCU from the Compare table
+        if self.table.currentRow() < 0:
+            return
+        row = self.table.currentRow()
+        item = self.table.item(row, 1)
+        if item is None:
+            return
+        mcu_id = item.data(Qt.UserRole)
+        name = item.text() if item else ''
+        if mcu_id is None:
+            return
+        resp = QMessageBox.question(self, 'Delete MCU', f"Delete MCU '{name}'? This will remove related NCO entries.", QMessageBox.Yes | QMessageBox.No)
+        if resp != QMessageBox.Yes:
+            return
+        if self.db.delete_mcu(int(mcu_id)):
+            self._refresh_table()
+
     def _open_add_company(self):
         dlg = AddCompanyDialog(self.db, self)
         if dlg.exec():
@@ -276,6 +360,41 @@ class MainWindow(QMainWindow):
                 idx = self.company_combo.findData(new_id)
                 if idx >= 0:
                     self.company_combo.setCurrentIndex(idx)
+            self._refresh_table()
+
+    def _rename_company(self):
+        from PySide6.QtWidgets import QInputDialog
+        if self.company_combo.count() == 0:
+            return
+        company_id = self.company_combo.currentData()
+        current_name = self.company_combo.currentText()
+        name, ok = QInputDialog.getText(self, 'Rename Company', 'New name:', text=current_name)
+        if ok and name.strip():
+            if self.db.update_company_name(int(company_id), name.strip()):
+                self._load_companies()
+                # keep the same company selected after rename
+                idx = self.company_combo.findData(company_id)
+                if idx >= 0:
+                    self.company_combo.setCurrentIndex(idx)
+                self._refresh_table()
+
+    def _delete_company(self):
+        if self.company_combo.count() == 0:
+            return
+        company_id = self.company_combo.currentData()
+        comp = self.db.get_company_by_id(int(company_id))
+        if not comp:
+            return
+        # Safety: do not delete Our Company
+        if int(comp.get('is_ours', 0)) == 1:
+            QMessageBox.information(self, 'Delete Company', 'Cannot delete Our Company.')
+            return
+        name = comp.get('name', '')
+        resp = QMessageBox.question(self, 'Delete Company', f"Delete company '{name}' and all its MCUs and related NCO entries?", QMessageBox.Yes | QMessageBox.No)
+        if resp != QMessageBox.Yes:
+            return
+        if self.db.delete_company(int(company_id)):
+            self._load_companies()
             self._refresh_table()
 
     def _open_nco_add(self):
@@ -293,21 +412,21 @@ class MainWindow(QMainWindow):
         v = QVBoxLayout(page)
         # Actions row
         row = QHBoxLayout()
-        row.addWidget(QLabel('NCO:'))
+        row.addWidget(QLabel('NCO/Commission:'))
         self.nco_org_combo = QComboBox()
         self.nco_org_combo.currentIndexChanged.connect(self._refresh_nco_table)
         row.addWidget(self.nco_org_combo, 2)
-        add_org_btn = QPushButton('Add Org')
-        add_org_btn.clicked.connect(self._add_nco_org)
-        row.addWidget(add_org_btn)
-
         add_btn = QPushButton('Add Entry')
         add_btn.clicked.connect(self._open_nco_add)
         row.addWidget(add_btn)
-        # Search box
+        # Search controls (mode + query)
         row.addWidget(QLabel('Search:'))
+        self.nco_search_mode = QComboBox()
+        self.nco_search_mode.addItems(['All', 'MCU', 'NCO/Commission', 'Company', 'Quantity'])
+        self.nco_search_mode.currentIndexChanged.connect(self._on_nco_search_mode_change)
+        row.addWidget(self.nco_search_mode)
         self.nco_search = QLineEdit()
-        self.nco_search.setPlaceholderText('Type to search NCO/company/MCU')
+        self.nco_search.setPlaceholderText('Type to search...')
         self.nco_search.textChanged.connect(self._refresh_nco_table)
         row.addWidget(self.nco_search, 2)
         # Edit button
@@ -322,7 +441,7 @@ class MainWindow(QMainWindow):
 
         # NCO table
         self.nco_table = QTableWidget(0, 7)
-        self.nco_table.setHorizontalHeaderLabels(['NCO', 'Company', 'Competitor MCU', 'Quantity', 'Our MCU', 'Match %', 'Category'])
+        self.nco_table.setHorizontalHeaderLabels(['NCO/Commission', 'Company', 'Competitor MCU', 'Quantity', 'Our MCU', 'Match %', 'Category'])
         self.nco_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.nco_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.nco_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
@@ -351,6 +470,7 @@ class MainWindow(QMainWindow):
         our_mcus = [dict(r) for r in self.db.list_our_mcus()]
         # Apply text filter
         q = self.nco_search.text().lower() if hasattr(self, 'nco_search') else ''
+        mode = self.nco_search_mode.currentText() if hasattr(self, 'nco_search_mode') else 'All'
         def matches(row: Dict[str, Any]) -> bool:
             if not q:
                 return True
@@ -358,7 +478,18 @@ class MainWindow(QMainWindow):
             comp = comps.get(row.get('company_id'), '')
             cmcu = mcu_name.get(row.get('comp_mcu_id'), '')
             omcu = mcu_name.get(row.get('our_mcu_id'), '')
-            return (q in nco.lower()) or (q in comp.lower()) or (q in str(cmcu).lower()) or (q in str(omcu).lower())
+            qty = str(row.get('quantity', ''))
+            if mode == 'All':
+                return (q in nco.lower()) or (q in comp.lower()) or (q in str(cmcu).lower()) or (q in str(omcu).lower()) or (q in qty.lower())
+            if mode == 'MCU':
+                return (q in str(cmcu).lower()) or (q in str(omcu).lower())
+            if mode == 'NCO/Commission':
+                return q in nco.lower()
+            if mode == 'Company':
+                return q in comp.lower()
+            if mode == 'Quantity':
+                return q in qty.lower()
+            return True
 
         filtered = [r for r in rows if matches(r)]
         self.nco_table.setRowCount(0)
@@ -401,6 +532,21 @@ class MainWindow(QMainWindow):
             if self.nco_table.item(row, 0):
                 self.nco_table.item(row, 0).setData(Qt.UserRole, r.get('id'))
 
+    def _on_nco_search_mode_change(self):
+        # Update placeholder and refresh table according to selected search mode
+        if not hasattr(self, 'nco_search'):
+            return
+        mode = self.nco_search_mode.currentText()
+        placeholders = {
+            'All': 'Type to search Org/Company/MCU/Quantity',
+            'MCU': 'Type to search by Competitor/Our MCU',
+            'NCO/Commission': 'Type to search by Organization',
+            'Company': 'Type to search by Company',
+            'Quantity': 'Type to search by Quantity',
+        }
+        self.nco_search.setPlaceholderText(placeholders.get(mode, 'Type to search...'))
+        self._refresh_nco_table()
+
     def _load_nco_orgs(self):
         if not hasattr(self, 'nco_org_combo'):
             return
@@ -408,6 +554,8 @@ class MainWindow(QMainWindow):
         current = self.nco_org_combo.currentData() if self.nco_org_combo.count() else None
         self.nco_org_combo.blockSignals(True)
         self.nco_org_combo.clear()
+        # Add an "All Organizations" option to view all entries
+        self.nco_org_combo.addItem('All Organizations', None)
         for o in orgs:
             self.nco_org_combo.addItem(o['name'], o['id'])
         self.nco_org_combo.blockSignals(False)
@@ -415,12 +563,41 @@ class MainWindow(QMainWindow):
             idx = self.nco_org_combo.findData(current)
             if idx >= 0:
                 self.nco_org_combo.setCurrentIndex(idx)
+        elif self.nco_org_combo.count() > 0:
+            # default to "All Organizations"
+            self.nco_org_combo.setCurrentIndex(0)
+        # Ensure table refresh after loading orgs
+        self._refresh_nco_table()
 
     def _add_nco_org(self):
         from PySide6.QtWidgets import QInputDialog
         name, ok = QInputDialog.getText(self, 'Add Organization', 'Organization Name:')
         if ok and name.strip():
             self.db.add_nco_org(name.strip())
+            self._load_nco_orgs()
+            self._refresh_nco_table()
+
+    def _rename_nco_org(self):
+        from PySide6.QtWidgets import QInputDialog
+        if not hasattr(self, 'nco_org_combo') or self.nco_org_combo.count() == 0:
+            return
+        org_id = self.nco_org_combo.currentData()
+        current_name = self.nco_org_combo.currentText()
+        name, ok = QInputDialog.getText(self, 'Rename Organization', 'New name:', text=current_name)
+        if ok and name.strip():
+            if self.db.update_nco_org(int(org_id), name.strip()):
+                self._load_nco_orgs()
+                self._refresh_nco_table()
+
+    def _delete_nco_org(self):
+        if not hasattr(self, 'nco_org_combo') or self.nco_org_combo.count() == 0:
+            return
+        org_id = self.nco_org_combo.currentData()
+        name = self.nco_org_combo.currentText()
+        resp = QMessageBox.question(self, 'Delete Organization', f"Delete organization '{name}' and all its NCO entries?", QMessageBox.Yes | QMessageBox.No)
+        if resp != QMessageBox.Yes:
+            return
+        if self.db.delete_nco_org(int(org_id)):
             self._load_nco_orgs()
             self._refresh_nco_table()
 
@@ -438,6 +615,19 @@ class MainWindow(QMainWindow):
             return
         dlg = EditNcoEntryDialog(self.db, entry, self)
         if dlg.exec():
+            self._refresh_nco_table()
+
+    def _delete_selected_nco(self):
+        if not hasattr(self, 'nco_table') or self.nco_table.currentRow() < 0:
+            return
+        row = self.nco_table.currentRow()
+        entry_id = self.nco_table.item(row, 0).data(Qt.UserRole) if self.nco_table.item(row, 0) else None
+        if entry_id is None:
+            return
+        resp = QMessageBox.question(self, 'Delete Entry', 'Delete selected NCO/Commission entry?', QMessageBox.Yes | QMessageBox.No)
+        if resp != QMessageBox.Yes:
+            return
+        if self.db.delete_nco_entry(int(entry_id)):
             self._refresh_nco_table()
 
     def _open_nco_details(self, row: int, column: int):

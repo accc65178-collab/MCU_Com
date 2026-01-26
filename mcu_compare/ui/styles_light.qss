@@ -82,3 +82,40 @@ QMessageBox QLabel { color: #0f172a; }
 
 QGroupBox { border: 1px solid #cbd5e1; border-radius: 8px; margin-top: 12px; padding-top: 6px; }
 QGroupBox::title { subcontrol-origin: margin; left: 8px; padding: 0 4px; color: #334155; }
+
+/* Checkboxes */
+QCheckBox { color: #0f172a; spacing: 6px; }
+QCheckBox::indicator {
+  width: 16px; height: 16px;
+  border-radius: 3px;
+}
+QCheckBox::indicator:unchecked {
+  border: 1px solid #cbd5e1; background: #ffffff;
+}
+QCheckBox::indicator:unchecked:hover {
+  border: 1px solid #2563eb;
+}
+QCheckBox::indicator:checked {
+  border: 1px solid #2563eb; background: #2563eb; /* Qt draws white tick over this */
+}
+QCheckBox::indicator:disabled { border: 1px solid #e2e8f0; background: #f8fafc; }
+
+/* SpinBox buttons and arrows */
+QSpinBox::up-button, QDoubleSpinBox::up-button, QAbstractSpinBox::up-button {
+  subcontrol-origin: border; subcontrol-position: top right;
+  width: 22px; border-left: 1px solid #cbd5e1; background: #ffffff; border-top-right-radius: 6px;
+}
+QSpinBox::down-button, QDoubleSpinBox::down-button, QAbstractSpinBox::down-button {
+  subcontrol-origin: border; subcontrol-position: bottom right;
+  width: 22px; border-left: 1px solid #cbd5e1; background: #ffffff; border-bottom-right-radius: 6px;
+}
+QSpinBox::up-button:hover, QDoubleSpinBox::up-button:hover, QAbstractSpinBox::up-button:hover { background: #f1f5f9; }
+QSpinBox::down-button:hover, QDoubleSpinBox::down-button:hover, QAbstractSpinBox::down-button:hover { background: #f1f5f9; }
+QSpinBox::up-arrow, QDoubleSpinBox::up-arrow, QAbstractSpinBox::up-arrow {
+  image: url(:/qt-project.org/styles/commonstyle/images/arrowup.png);
+  width: 10px; height: 10px;
+}
+QSpinBox::down-arrow, QDoubleSpinBox::down-arrow, QAbstractSpinBox::down-arrow {
+  image: url(:/qt-project.org/styles/commonstyle/images/arrowdown.png);
+  width: 10px; height: 10px;
+}
