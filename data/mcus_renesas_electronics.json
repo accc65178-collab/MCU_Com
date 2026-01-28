@@ -1,4 +1,5 @@
-[{
+[
+  {
     "id": 71,
     "company_id": "15",
     "name": "R7FS7G27H3A01CFC",
@@ -23,5 +24,13 @@
     "clock_mgmt": 1,
     "qei": 1,
     "internal_osc": 1,
-    "security_features": 1
-  }]
+    "security_features": 1,
+    "output_compare": 14,
+    "input_capture": 1,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 1,
+    "ext_interrupts": 126
+  }
+]

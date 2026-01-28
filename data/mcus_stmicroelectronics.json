@@ -1,7 +1,7 @@
 [
   {
     "id": "58",
-    "company": "STMicroelectronics",
+    "company_id": "2",
     "name": "STM32F427CGT6",
     "core": "ARM Cortex-M4",
     "core_mark": 33,
@@ -24,11 +24,18 @@
     "clock_mgmt": 1,
     "qei": 1,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+    "output_compare": 14,
+    "input_capture": 12,
+    "qspi": 1,
+    "ethernet": 1,
+    "emif": 0,
+    "spi_slave": 4,
+    "ext_interrupts": 114
   },
   {
     "id": "59",
-    "company": "STMicroelectronics",
+    "company_id": "2",
     "name": "STM32F446ZET6",
     "core": "ARM Cortex-M4",
     "core_mark": 30,
@@ -51,7 +58,14 @@
     "clock_mgmt": 1,
     "qei": 1,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+    "output_compare": 12,
+    "input_capture": 10,
+    "qspi": 1,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 3,
+    "ext_interrupts": 114
   },
   {
     "id": "60",
@@ -78,6 +92,13 @@
     "clock_mgmt": 1,
     "qei": 1,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+    "output_compare": 16,
+    "input_capture": 14,
+    "qspi": 1,
+    "ethernet": 1,
+    "emif": 0,
+    "spi_slave": 6,
+    "ext_interrupts": 168
   }
 ]

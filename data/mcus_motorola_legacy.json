@@ -24,7 +24,11 @@
     "clock_mgmt": 0,
     "qei": 0,
     "internal_osc": 0,
-    "security_features": 0
+    "security_features": 0,
+    "input_capture": 0,
+    "output_compare": 0,
+    "qspi": 0,
+    "external_interrupts": 0
   },
   {
     "id": "97",
@@ -51,6 +55,10 @@
     "clock_mgmt": 0,
     "qei": 0,
     "internal_osc": 0,
-    "security_features": 0
+    "security_features": 0,
+    "input_capture": 0,
+    "output_compare": 0,
+    "qspi": 0,
+    "external_interrupts": 0
   }
 ]

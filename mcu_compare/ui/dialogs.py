@@ -33,6 +33,13 @@ FEATURE_FIELDS = [
     ('qei', 'Quadrature encoder', 'bool'),
     ('internal_osc', 'Internal oscillator', 'bool'),
     ('security_features', 'Security features', 'bool'),
+    ('output_compare', 'Output Compare', 'int'),
+    ('input_capture', 'Input Capture', 'bool'),
+    ('qspi', 'QSPI', 'int'),
+    ('ethernet', 'Ethernet', 'bool'),
+    ('emif', 'EMIF', 'bool'),
+    ('spi_slave', 'SPI Slave', 'bool'),
+    ('ext_interrupts', 'External Interrupts', 'int'),
 ]
 
 
@@ -501,29 +508,29 @@ class DetailsDialog(QDialog):
         ours = dict(self.db.get_mcu_by_id(self.our_mcu_id))
 
         feat_cols = self.db.feature_columns()
-        comp_feats = {k: comp.get(k) for k in feat_cols}
+        comp_feats = {k: comp.get(k) for k in feat_cols} | {'name': comp.get('name', '')}
         our_feats = {k: ours.get(k) for k in feat_cols}
 
         overall, per_feat = weighted_similarity(comp_feats, our_feats)
         cat = categorize(overall)
 
-        header = QLabel(f"{comp['name']} vs {ours['name']} — Match {overall:.1f}% ({cat})")
-        header.setObjectName('headerLabel')
-        header.setAlignment(Qt.AlignCenter)
-        v.addWidget(header)
+        self.header = QLabel(f"{comp['name']} vs {ours['name']} — Match {overall:.1f}% ({cat})")
+        self.header.setObjectName('headerLabel')
+        self.header.setAlignment(Qt.AlignCenter)
+        v.addWidget(self.header)
 
         # Overall similarity progress
-        overall_bar = QProgressBar()
-        overall_bar.setRange(0, 100)
-        overall_bar.setValue(int(round(overall)))
-        overall_bar.setFormat(f"Overall Match: {overall:.1f}%")
-        overall_bar.setTextVisible(True)
+        self.overall_bar = QProgressBar()
+        self.overall_bar.setRange(0, 100)
+        self.overall_bar.setValue(int(round(overall)))
+        self.overall_bar.setFormat(f"Overall Match: {overall:.1f}%")
+        self.overall_bar.setTextVisible(True)
         # Make percentage highly visible
-        overall_bar.setStyleSheet(
+        self.overall_bar.setStyleSheet(
             "QProgressBar { font-size: 22px; font-weight: 700; padding: 2px; }"
         )
-        overall_bar.setMinimumHeight(34)
-        v.addWidget(overall_bar)
+        self.overall_bar.setMinimumHeight(34)
+        v.addWidget(self.overall_bar)
 
         # Compact donut chart (Match vs Gap) shown below the overall bar
         series = QPieSeries()
@@ -546,30 +553,29 @@ class DetailsDialog(QDialog):
         chart.setTitle("")
         chart_view = QChartView(chart)
         chart_view.setRenderHint(QPainter.Antialiasing)
-        overlay = QWidget()
-        stack = QStackedLayout(overlay)
+        self.overlay = QWidget()
+        stack = QStackedLayout(self.overlay)
         stack.setContentsMargins(0, 0, 0, 0)
         stack.setStackingMode(QStackedLayout.StackingMode.StackAll)
         stack.addWidget(chart_view)
-        pct_label = QLabel(f"Overall Match: {overall:.1f}%")
-        pct_label.setAlignment(Qt.AlignCenter)
+        self.pct_label = QLabel(f"Overall Match: {overall:.1f}%")
+        self.pct_label.setAlignment(Qt.AlignCenter)
         text_color = self.palette().color(QPalette.WindowText).name()
         bg = 'rgba(0,0,0,0.35)' if self.palette().color(QPalette.Window).value() > 128 else 'rgba(255,255,255,0.18)'
         border = '#3b82f6'
-        pct_label.setStyleSheet(
+        self.pct_label.setStyleSheet(
             f"font-size: 18px; font-weight: 600; color: {text_color}; "
             f"background: {bg}; border: 1px solid {border}; border-radius: 9px; padding: 4px 10px;"
         )
-        pct_label.setAttribute(Qt.WA_TransparentForMouseEvents, True)
-        stack.addWidget(pct_label)
+        self.pct_label.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        stack.addWidget(self.pct_label)
         from PySide6.QtWidgets import QSizePolicy
-        overlay.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.overlay.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         chart_view.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        pct_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        stack.setAlignment(pct_label, Qt.AlignCenter)
-        overlay.setMinimumHeight(200)
-        overlay.setMaximumHeight(220)
-        v.addWidget(overlay)
+        self.pct_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        stack.setAlignment(self.pct_label, Qt.AlignCenter)
+        self.overlay.setMinimumHeight(200)
+        self.overlay.setMaximumHeight(220)
 
         # Prepare summary bullets data (will render AFTER the table)
         def numeric(val):
@@ -585,7 +591,8 @@ class DetailsDialog(QDialog):
         worse: list[str] = []
         more_is_better = {
             'max_clock_mhz', 'flash_kb', 'sram_kb', 'gpios', 'uarts', 'spis', 'i2cs', 'pwms',
-            'timers', 'dacs', 'adcs', 'cans'
+            'timers', 'dacs', 'adcs', 'cans',
+            'output_compare', 'input_capture', 'qspi', 'ethernet', 'emif', 'spi_slave', 'ext_interrupts'
         }
         bool_fields = {'eeprom', 'power_mgmt', 'clock_mgmt', 'qei', 'internal_osc', 'security_features'}
         for key, label, typ in FEATURE_FIELDS:
@@ -630,16 +637,80 @@ class DetailsDialog(QDialog):
                     worse.append(f"FPU: {names.get(of, of)} vs {names.get(cf, cf)}")
             # Skip textual cores and optional alt core in bullets
 
-        # (Bullets will be added after the table is rendered)
+        # (Bullets will be rendered flanking the donut chart)
 
-        # Feature comparison table
-        table = QTableWidget(len(FEATURE_FIELDS), 4)
-        table.setHorizontalHeaderLabels(['Feature', 'Competitor', ours.get('name', 'OUR MCU'), 'Similarity'])
-        table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        # Three-column content row: [Left panel] [Center donut+table] [Right panel]
+        content_row = QHBoxLayout()
+        from PySide6.QtWidgets import QFrame
+        # Left-most panel container
+        left_host = QWidget()
+        self._left_box = QVBoxLayout(left_host)
+        self._left_box.setContentsMargins(0, 0, 0, 0)
+        self._left_box.setSpacing(8)
+        # Center column with donut + table
+        center_col = QVBoxLayout()
+        center_col.addWidget(self.overlay)
+        self.table = QTableWidget(len(FEATURE_FIELDS), 4)
+        self.table.setHorizontalHeaderLabels(['Feature', 'Competitor', ours.get('name', 'OUR MCU'), 'Similarity'])
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        center_col.addWidget(self.table)
+        # Right-most panel container
+        right_host = QWidget()
+        self._right_box = QVBoxLayout(right_host)
+        self._right_box.setContentsMargins(0, 0, 0, 0)
+        self._right_box.setSpacing(8)
+        # Helper to build a panel
+        def _mk_panel(html: str, ok: bool) -> QFrame:
+            frame = QFrame()
+            frame.setFrameShape(QFrame.StyledPanel)
+            frame.setStyleSheet(
+                "QFrame { background: rgba(46, 125, 50, 0.10); border: 1px solid rgba(46,125,50,0.35); border-radius: 6px; padding: 6px; }"
+                if ok else
+                "QFrame { background: rgba(198, 40, 40, 0.10); border: 1px solid rgba(198,40,40,0.35); border-radius: 6px; padding: 6px; }"
+            )
+            lbl = QLabel(html)
+            lbl.setWordWrap(True)
+            lay = QVBoxLayout(frame)
+            lay.setContentsMargins(6,6,6,6)
+            lay.addWidget(lbl)
+            return frame
+        # Populate initial panels
+        if better:
+            better_html = """
+            <div style='font-size:13px;'>
+              <div style='font-weight:700; font-size:15px; color:#2e7d32; margin-bottom:6px;'>Areas OUR MCU is better</div>
+              <ul style='margin:0 0 0 18px; padding:0;'>
+            """ + "".join(f"<li>{item}</li>" for item in better) + """
+              </ul>
+            </div>
+            """
+            self._frame_better = _mk_panel(better_html, True)
+            self._left_box.addWidget(self._frame_better)
+        if worse:
+            worse_html = """
+            <div style='font-size:13px;'>
+              <div style='font-weight:700; font-size:15px; color:#fffff; margin-bottom:6px;'>Areas OUR MCU lacks</div>
+              <ul style='margin:0 0 0 18px; padding:0;'>
+            """ + "".join(f"<li>{item}</li>" for item in worse) + """
+              </ul>
+            </div>
+            """
+            self._frame_worse = _mk_panel(worse_html, False)
+            self._right_box.addWidget(self._frame_worse)
+        # Assemble row: give center most space
+        content_row.addWidget(left_host, 1)
+        content_row.addLayout(center_col, 3)
+        content_row.addWidget(right_host, 1)
+        v.addLayout(content_row)
 
         from mcu_compare.engine.similarity import DEFAULT_WEIGHTS
+        # Keep references we need for live updates
+        self._comp_feats = comp_feats
+        self._our_feats = our_feats
+        self._per_feat = per_feat
+        self._sim_bars = {}
         for row, (key, label, typ) in enumerate(FEATURE_FIELDS):
-            table.setItem(row, 0, QTableWidgetItem(label))
+            self.table.setItem(row, 0, QTableWidgetItem(label))
             # Boolean formatting as Yes/No
             def fmt(val):
                 if typ == 'bool':
@@ -651,19 +722,141 @@ class DetailsDialog(QDialog):
                     except Exception:
                         return str(val)
                 return str(val)
-            table.setItem(row, 1, QTableWidgetItem(fmt(comp.get(key, ''))))
-            table.setItem(row, 2, QTableWidgetItem(fmt(ours.get(key, ''))))
+            item_comp = QTableWidgetItem(fmt(comp.get(key, '')))
+            item_comp.setFlags(item_comp.flags() & ~Qt.ItemIsEditable)
+            self.table.setItem(row, 1, item_comp)
+            item_our = QTableWidgetItem(fmt(ours.get(key, '')))
+            # Make OUR MCU column read-only per requirements
+            item_our.setFlags(item_our.flags() & ~Qt.ItemIsEditable)
+            self.table.setItem(row, 2, item_our)
             sim = per_feat.get(key, 0.0) * 100.0
             sim_bar = QProgressBar()
             sim_bar.setRange(0, 100)
             sim_bar.setValue(int(round(sim)))
             sim_bar.setFormat(f"{sim:.0f}%")
             sim_bar.setTextVisible(True)
-            table.setCellWidget(row, 3, sim_bar)
+            self.table.setCellWidget(row, 3, sim_bar)
+            self._sim_bars[key] = sim_bar
+        # Table is read-only; no inline edits
 
-        v.addWidget(table)
-        # Summary bullets placed BELOW the table
+        v.addWidget(self.table)
+
+        btn_row = QHBoxLayout()
+        close_btn = QPushButton('Close')
+        close_btn.clicked.connect(self.accept)
+        btn_row.addWidget(close_btn)
+        v.addLayout(btn_row)
+
+    def _on_table_item_changed(self, item: QTableWidgetItem):
+        # Only handle edits in OUR MCU column
+        if item.column() != 2:
+            return
+        row = item.row()
+        if row < 0 or row >= len(FEATURE_FIELDS):
+            return
+        key, label, typ = FEATURE_FIELDS[row]
+        # Only numeric fields are editable
+        if typ not in ('int', 'float'):
+            return
+        text = item.text().strip()
+        # Parse value
+        try:
+            if typ == 'int':
+                val = int(float(text or '0'))
+            else:
+                val = float(text or '0')
+        except Exception:
+            # Revert display to previous value
+            prev = self._our_feats.get(key, 0)
+            item.setText(str(prev))
+            return
+        # Persist to DB and local cache
+        if self.db.update_mcu(self.our_mcu_id, {key: val}):
+            self._our_feats[key] = val
+            self._recompute_and_refresh()
+
+    def _recompute_and_refresh(self):
+        # Recompute similarity and update UI pieces
+        overall, per_feat = weighted_similarity(self._comp_feats, self._our_feats)
+        self._per_feat = per_feat
+        cat = categorize(overall)
+        # Header and bars
+        self.header.setText(f"{self._comp_feats.get('name','')} vs {self.db.get_mcu_by_id(self.our_mcu_id)['name']} — Match {overall:.1f}% ({cat})")
+        self.overall_bar.setValue(int(round(overall)))
+        self.overall_bar.setFormat(f"Overall Match: {overall:.1f}%")
+        self.pct_label.setText(f"Overall Match: {overall:.1f}%")
+        # Update per-row progress bars
+        for (key, _, _typ) in FEATURE_FIELDS:
+            bar = self._sim_bars.get(key)
+            if bar is not None:
+                sim = per_feat.get(key, 0.0) * 100.0
+                bar.setValue(int(round(sim)))
+                bar.setFormat(f"{sim:.0f}%")
+        # Recompute bullets
+        better: list[str] = []
+        worse: list[str] = []
+        def numeric(val):
+            try:
+                return float(val)
+            except Exception:
+                try:
+                    return int(val)
+                except Exception:
+                    return None
+        more_is_better = {
+            'max_clock_mhz', 'flash_kb', 'sram_kb', 'gpios', 'uarts', 'spis', 'i2cs', 'pwms',
+            'timers', 'dacs', 'adcs', 'cans',
+            'output_compare', 'input_capture', 'qspi', 'ethernet', 'emif', 'spi_slave', 'ext_interrupts'
+        }
+        bool_fields = {'eeprom', 'power_mgmt', 'clock_mgmt', 'qei', 'internal_osc', 'security_features'}
+        for key, label, typ in FEATURE_FIELDS:
+            c = self._comp_feats.get(key)
+            o = self._our_feats.get(key)
+            if key in more_is_better:
+                cn = numeric(c)
+                on = numeric(o)
+                if cn is None or on is None:
+                    continue
+                if on > cn:
+                    better.append(f"{label}: {on} vs {cn}")
+                elif on < cn:
+                    worse.append(f"{label}: {on} vs {cn}")
+            elif key in bool_fields:
+                try:
+                    cb = 1 if int(c or 0) == 1 else 0
+                except Exception:
+                    cb = 0
+                try:
+                    ob = 1 if int(o or 0) == 1 else 0
+                except Exception:
+                    ob = 0
+                if ob > cb:
+                    better.append(f"{label}: Yes vs No")
+                elif ob < cb:
+                    worse.append(f"{label}: No vs Yes")
+            elif key == 'fpu':
+                try:
+                    cf = int(c or 0)
+                except Exception:
+                    cf = 0
+                try:
+                    of = int(o or 0)
+                except Exception:
+                    of = 0
+                names = {0: 'None', 1: 'Single precision', 2: 'Double precision'}
+                if of > cf:
+                    better.append(f"FPU: {names.get(of, of)} vs {names.get(cf, cf)}")
+                elif of < cf:
+                    worse.append(f"FPU: {names.get(of, of)} vs {names.get(cf, cf)}")
+        # Rebuild sidebar frames
         from PySide6.QtWidgets import QFrame
+        # Clear existing items in the sidebar layout
+        if hasattr(self, '_side_layout') and self._side_layout is not None:
+            while self._side_layout.count():
+                w = self._side_layout.takeAt(0).widget()
+                if w is not None:
+                    w.setParent(None)
+        # Add again if non-empty
         if better:
             better_html = """
             <div style='font-size:12px;'>
@@ -681,9 +874,7 @@ class DetailsDialog(QDialog):
             fb = QVBoxLayout(frame_better)
             fb.setContentsMargins(6,6,6,6)
             fb.addWidget(lbl_better)
-            # Cap height to keep chart visible; allow label to scroll if needed
-            frame_better.setMaximumHeight(160)
-            v.addWidget(frame_better)
+            self._side_layout.addWidget(frame_better)
         if worse:
             worse_html = """
             <div style='font-size:12px;'>
@@ -701,11 +892,4 @@ class DetailsDialog(QDialog):
             fw = QVBoxLayout(frame_worse)
             fw.setContentsMargins(6,6,6,6)
             fw.addWidget(lbl_worse)
-            frame_worse.setMaximumHeight(120)
-            v.addWidget(frame_worse)
-
-        btn_row = QHBoxLayout()
-        close_btn = QPushButton('Close')
-        close_btn.clicked.connect(self.accept)
-        btn_row.addWidget(close_btn)
-        v.addLayout(btn_row)
+            self._side_layout.addWidget(frame_worse)

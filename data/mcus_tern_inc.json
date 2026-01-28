@@ -24,6 +24,13 @@
     "clock_mgmt": 1,
     "qei": 0,
     "internal_osc": 1,
-    "security_features": 0
+    "security_features": 0,
+    "output_compare": 2,
+    "input_capture": 0,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 1,
+    "ext_interrupts": 0
   }
 ]

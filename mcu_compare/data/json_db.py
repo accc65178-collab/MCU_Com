@@ -350,7 +350,8 @@ class JsonDatabase:
             "id": new_id,
             "company_id": company_id,
         }
-        for f in ['name','core','core_mark','dsp_core','fpu','max_clock_mhz','flash_kb','sram_kb','eeprom','gpios','uarts','spis','i2cs','pwms','timers','dacs','adcs','cans','power_mgmt','clock_mgmt','qei','internal_osc','security_features']:
+        for f in ['name','core','core_mark','dsp_core','fpu','max_clock_mhz','flash_kb','sram_kb','eeprom','gpios','uarts','spis','i2cs','pwms','timers','dacs','adcs','cans','power_mgmt','clock_mgmt','qei','internal_osc','security_features',
+                  'output_compare','input_capture','qspi','ethernet','emif','spi_slave','ext_interrupts']:
             record[f] = data.get(f, '' if f in ['name','core'] else 0)
         mcus.append(record)
         self._save_mcus(company_id, mcus)
@@ -364,7 +365,8 @@ class JsonDatabase:
         company_id = int(target.get('company_id'))
         mcus = self._load_mcus(company_id)
         updated = False
-        fields = ['name','core','core_mark','dsp_core','fpu','max_clock_mhz','flash_kb','sram_kb','eeprom','gpios','uarts','spis','i2cs','pwms','timers','dacs','adcs','cans','power_mgmt','clock_mgmt','qei','internal_osc','security_features']
+        fields = ['name','core','core_mark','dsp_core','fpu','max_clock_mhz','flash_kb','sram_kb','eeprom','gpios','uarts','spis','i2cs','pwms','timers','dacs','adcs','cans','power_mgmt','clock_mgmt','qei','internal_osc','security_features',
+                  'output_compare','input_capture','qspi','ethernet','emif','spi_slave','ext_interrupts']
         for idx, rec in enumerate(mcus):
             if rec.get('id') == mcu_id:
                 # Update provided fields only
@@ -382,7 +384,8 @@ class JsonDatabase:
 
     def feature_columns(self) -> List[str]:
         return [
-            'core','core_mark','dsp_core','fpu','max_clock_mhz','flash_kb','sram_kb','eeprom','gpios','uarts','spis','i2cs','pwms','timers','dacs','adcs','cans','power_mgmt','clock_mgmt','qei','internal_osc','security_features'
+            'core','core_mark','dsp_core','fpu','max_clock_mhz','flash_kb','sram_kb','eeprom','gpios','uarts','spis','i2cs','pwms','timers','dacs','adcs','cans','power_mgmt','clock_mgmt','qei','internal_osc','security_features',
+            'output_compare','input_capture','qspi','ethernet','emif','spi_slave','ext_interrupts'
         ]
 
     def all_mcus(self) -> List[Dict[str, Any]]:
@@ -502,6 +505,11 @@ class JsonDatabase:
 
     def _normalize_mcu(self, rec: Dict[str, Any]) -> Dict[str, Any]:
         r = dict(rec)
+        # Ensure id is an int
+        try:
+            r['id'] = int(r.get('id', 0))
+        except Exception:
+            r['id'] = 0
         # Ensure company_id is an int
         try:
             r['company_id'] = int(r.get('company_id', 0))

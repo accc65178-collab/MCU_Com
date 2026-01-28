@@ -1,8 +1,8 @@
 [
-  {
+    {
     "id": "61",
     "company_id": "12",
-    "name": "TMS 320F2808",
+    "name": "TMS320F2808",
     "core": "TI C28x",
     "core_mark": 8,
     "dsp_core": 1,
@@ -24,12 +24,19 @@
     "clock_mgmt": 1,
     "qei": 1,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+    "output_compare": 6,
+    "input_capture": 1,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 1,
+    "ext_interrupts": 16
   },
   {
     "id": "62",
     "company_id": "12",
-    "name": "TMS 320F28335PGFA (TI)",
+    "name": "TMS320F28335PGFA",
     "core": "TI C28x",
     "core_mark": 10,
     "dsp_core": 1,
@@ -51,7 +58,14 @@
     "clock_mgmt": 1,
     "qei": 1,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+    "output_compare": 12,
+    "input_capture": 1,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 1,
+    "ext_interrupts": 16
   },
   {
     "id": "63",
@@ -78,7 +92,14 @@
     "clock_mgmt": 1,
     "qei": 1,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+    "output_compare": 12,
+    "input_capture": 1,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 1,
+    "ext_interrupts": 16
   },
   {
     "id": "64",
@@ -105,7 +126,14 @@
     "clock_mgmt": 1,
     "qei": 1,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+    "output_compare": 12,
+    "input_capture": 1,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 1,
+    "ext_interrupts": 16
   },
   {
     "id": "65",
@@ -132,7 +160,14 @@
     "clock_mgmt": 1,
     "qei": 1,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+    "output_compare": 12,
+    "input_capture": 1,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 1,
+    "ext_interrupts": 16
   },
   {
     "id": "66",
@@ -159,7 +194,14 @@
     "clock_mgmt": 1,
     "qei": 1,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+    "output_compare": 12,
+    "input_capture": 1,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 1,
+    "ext_interrupts": 16
   },
   {
     "id": "67",
@@ -186,12 +228,19 @@
     "clock_mgmt": 1,
     "qei": 1,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+    "output_compare": 16,
+    "input_capture": 1,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 1,
+    "ext_interrupts": 16
   },
   {
     "id": "68",
     "company_id": "12",
-    "name": "TMS320C31 Texas Instruments",
+    "name": "TMS320C31",
     "core": "TI C31 DSP",
     "core_mark": 5,
     "dsp_core": 1,
@@ -213,7 +262,14 @@
     "clock_mgmt": 1,
     "qei": 0,
     "internal_osc": 0,
-    "security_features": 0
+    "security_features": 0,
+    "output_compare": 0,
+    "input_capture": 0,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 0,
+    "ext_interrupts": 0
   },
   {
     "id": "69",
@@ -240,7 +296,14 @@
     "clock_mgmt": 1,
     "qei": 0,
     "internal_osc": 0,
-    "security_features": 0
+    "security_features": 0,
+    "output_compare": 0,
+    "input_capture": 0,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 0,
+    "ext_interrupts": 0
   },
   {
     "id": "70",
@@ -267,12 +330,19 @@
     "clock_mgmt": 1,
     "qei": 1,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+    "output_compare": 2,
+    "input_capture": 1,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 1,
+    "ext_interrupts": 16
   },
   {
     "id": "71",
     "company_id": "12",
-    "name": "TMS320C6713 Texas Instruments",
+    "name": "TMS320C6713",
     "core": "TI C6713 DSP",
     "core_mark": 14,
     "dsp_core": 1,
@@ -294,7 +364,14 @@
     "clock_mgmt": 1,
     "qei": 1,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+    "output_compare": 4,
+    "input_capture": 1,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 1,
+    "ext_interrupts": 16
   },
   {
     "id": "72",
@@ -321,7 +398,14 @@
     "clock_mgmt": 1,
     "qei": 0,
     "internal_osc": 0,
-    "security_features": 0
+    "security_features": 0,
+    "output_compare": 0,
+    "input_capture": 0,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 0,
+    "ext_interrupts": 0
   },
   {
     "id": "73",
@@ -348,12 +432,19 @@
     "clock_mgmt": 1,
     "qei": 1,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+    "output_compare": 4,
+    "input_capture": 1,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 1,
+    "ext_interrupts": 16
   },
   {
     "id": "74",
     "company_id": "12",
-    "name": "SM320C6727BGDHMEP Texas Instrum",
+    "name": "SM320C6727BGDHMEP",
     "core": "TI C67x DSP",
     "core_mark": 18,
     "dsp_core": 1,
@@ -375,7 +466,14 @@
     "clock_mgmt": 1,
     "qei": 1,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+    "output_compare": 4,
+    "input_capture": 1,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 1,
+    "ext_interrupts": 16
   },
   {
     "id": "75",
@@ -402,7 +500,14 @@
     "clock_mgmt": 1,
     "qei": 1,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+    "output_compare": 4,
+    "input_capture": 1,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 1,
+    "ext_interrupts": 16
   },
   {
     "id": "76",
@@ -429,6 +534,13 @@
     "clock_mgmt": 1,
     "qei": 1,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+    "output_compare": 12,
+    "input_capture": 1,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 1,
+    "ext_interrupts": 16
   }
 ]

@@ -5,8 +5,10 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
+import webbrowser
 import os
-from PySide6.QtGui import QColor, QBrush, QAction, QActionGroup
+from PySide6.QtGui import QColor, QBrush, QAction, QActionGroup, QIcon, QCursor
+from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QAbstractItemView, QSizePolicy
 
 from mcu_compare.engine.similarity import best_match, categorize
@@ -25,7 +27,7 @@ class MainWindow(QMainWindow):
     def __init__(self, db):
         super().__init__()
         self.db = db
-        self.setWindowTitle('MCU Comparator')
+        self.setWindowTitle('StriveFit')
         self.resize(1400, 900)
         self.setMinimumSize(1200, 800)
         self._build_ui()
@@ -39,8 +41,8 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central)
         v = QVBoxLayout(central)
         # Tabs container
-        tabs = QTabWidget(self)
-        v.addWidget(tabs)
+        self.tabs = QTabWidget(self)
+        v.addWidget(self.tabs)
         # Compare tab page/layout
         compare_page = QWidget()
         compare_v = QVBoxLayout(compare_page)
@@ -48,43 +50,43 @@ class MainWindow(QMainWindow):
         # Menus
         menubar = self.menuBar()
         data_menu = menubar.addMenu('Data')
-        act_add_mcu = QAction('Add MCU', self)
-        act_add_mcu.triggered.connect(self._open_add_dialog)
-        data_menu.addAction(act_add_mcu)
-        act_add_company = QAction('Add Company', self)
-        act_add_company.triggered.connect(self._open_add_company)
-        data_menu.addAction(act_add_company)
-        act_rename_company = QAction('Rename Company', self)
-        act_rename_company.triggered.connect(self._rename_company)
-        data_menu.addAction(act_rename_company)
-        act_delete_company = QAction('Delete Company', self)
-        act_delete_company.triggered.connect(self._delete_company)
-        data_menu.addAction(act_delete_company)
+        self.act_add_mcu = QAction('Add MCU', self)
+        self.act_add_mcu.triggered.connect(self._open_add_dialog)
+        data_menu.addAction(self.act_add_mcu)
+        self.act_add_company = QAction('Add Company', self)
+        self.act_add_company.triggered.connect(self._open_add_company)
+        data_menu.addAction(self.act_add_company)
+        self.act_rename_company = QAction('Rename Company', self)
+        self.act_rename_company.triggered.connect(self._rename_company)
+        data_menu.addAction(self.act_rename_company)
+        self.act_delete_company = QAction('Delete Company', self)
+        self.act_delete_company.triggered.connect(self._delete_company)
+        data_menu.addAction(self.act_delete_company)
 
         # NCO/Commission submenu
         nco_menu = data_menu.addMenu('NCO/Commission')
-        act_nco_add_org = QAction('Add Org', self)
-        act_nco_add_org.triggered.connect(self._add_nco_org)
-        nco_menu.addAction(act_nco_add_org)
-        act_nco_rename_org = QAction('Rename Org', self)
-        act_nco_rename_org.triggered.connect(self._rename_nco_org)
-        nco_menu.addAction(act_nco_rename_org)
-        act_nco_delete_org = QAction('Delete Org', self)
-        act_nco_delete_org.triggered.connect(self._delete_nco_org)
-        nco_menu.addAction(act_nco_delete_org)
+        self.act_nco_add_org = QAction('Add Org', self)
+        self.act_nco_add_org.triggered.connect(self._add_nco_org)
+        nco_menu.addAction(self.act_nco_add_org)
+        self.act_nco_rename_org = QAction('Rename Org', self)
+        self.act_nco_rename_org.triggered.connect(self._rename_nco_org)
+        nco_menu.addAction(self.act_nco_rename_org)
+        self.act_nco_delete_org = QAction('Delete Org', self)
+        self.act_nco_delete_org.triggered.connect(self._delete_nco_org)
+        nco_menu.addAction(self.act_nco_delete_org)
         nco_menu.addSeparator()
-        act_nco_add_entry = QAction('Add Entry', self)
-        act_nco_add_entry.triggered.connect(self._open_nco_add)
-        nco_menu.addAction(act_nco_add_entry)
-        act_nco_edit_selected = QAction('Edit Selected', self)
-        act_nco_edit_selected.triggered.connect(self._edit_selected_nco)
-        nco_menu.addAction(act_nco_edit_selected)
-        act_nco_delete_entry = QAction('Delete Selected Entry', self)
-        act_nco_delete_entry.triggered.connect(self._delete_selected_nco)
-        nco_menu.addAction(act_nco_delete_entry)
-        act_nco_view = QAction('View Entries', self)
-        act_nco_view.triggered.connect(self._open_nco_view)
-        nco_menu.addAction(act_nco_view)
+        self.act_nco_add_entry = QAction('Add Entry', self)
+        self.act_nco_add_entry.triggered.connect(self._open_nco_add)
+        nco_menu.addAction(self.act_nco_add_entry)
+        self.act_nco_edit_selected = QAction('Edit Selected', self)
+        self.act_nco_edit_selected.triggered.connect(self._edit_selected_nco)
+        nco_menu.addAction(self.act_nco_edit_selected)
+        self.act_nco_delete_entry = QAction('Delete Selected Entry', self)
+        self.act_nco_delete_entry.triggered.connect(self._delete_selected_nco)
+        nco_menu.addAction(self.act_nco_delete_entry)
+        self.act_nco_view = QAction('View Entries', self)
+        self.act_nco_view.triggered.connect(self._open_nco_view)
+        nco_menu.addAction(self.act_nco_view)
 
         view_menu = menubar.addMenu('View')
         theme_menu = view_menu.addMenu('Theme')
@@ -105,6 +107,7 @@ class MainWindow(QMainWindow):
         row.addWidget(QLabel('Company:'))
         self.company_combo = QComboBox()
         self.company_combo.currentIndexChanged.connect(self._refresh_table)
+        self.company_combo.currentIndexChanged.connect(self._update_compare_actions)
         row.addWidget(self.company_combo, 2)
 
         # Unified search: mode + query
@@ -124,12 +127,12 @@ class MainWindow(QMainWindow):
         self.compare_combo.currentIndexChanged.connect(self._refresh_table)
         row.addWidget(self.compare_combo, 2)
         # Edit selected MCU button
-        edit_selected_btn = QPushButton('Edit Selected')
-        edit_selected_btn.clicked.connect(self._edit_selected_mcu)
-        row.addWidget(edit_selected_btn)
-        delete_selected_btn = QPushButton('Delete Selected')
-        delete_selected_btn.clicked.connect(self._delete_selected_mcu)
-        row.addWidget(delete_selected_btn)
+        self.btn_edit_selected = QPushButton('Edit Selected')
+        self.btn_edit_selected.clicked.connect(self._edit_selected_mcu)
+        row.addWidget(self.btn_edit_selected)
+        self.btn_delete_selected = QPushButton('Delete Selected')
+        self.btn_delete_selected.clicked.connect(self._delete_selected_mcu)
+        row.addWidget(self.btn_delete_selected)
         # Category counts summary
         self.cat_counts_label = QLabel('')
         self.cat_counts_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
@@ -150,12 +153,20 @@ class MainWindow(QMainWindow):
         self.table.cellDoubleClicked.connect(self._open_details)
         # Enable interactive sorting
         self.table.setSortingEnabled(True)
+        # Ensure enough row height for icon + text
+        try:
+            self.table.verticalHeader().setDefaultSectionSize(36)
+        except Exception:
+            pass
         compare_v.addWidget(self.table)
         # Add compare tab
-        tabs.addTab(compare_page, 'Compare')
+        self.tabs.addTab(compare_page, 'Compare')
         # Build and add NCO tab
         nco_page = self._build_nco_tab()
-        tabs.addTab(nco_page, 'NCO/Commission')
+        self.tabs.addTab(nco_page, 'NCO/Commission')
+        # Toggle action enabled states when switching tabs
+        self.tabs.currentChanged.connect(self._on_tab_changed)
+        self._on_tab_changed(self.tabs.currentIndex())
 
     def _load_companies(self):
         # Only filter companies when search mode is Company
@@ -209,6 +220,10 @@ class MainWindow(QMainWindow):
             # No companies to show; clear table
             self.table.setRowCount(0)
             return
+        # Disable sorting during population to avoid None items and blank cells
+        prev_sorting = self.table.isSortingEnabled()
+        if prev_sorting:
+            self.table.setSortingEnabled(False)
         company_id = self.company_combo.currentData()
         query = (self.search_edit.text() or '') if hasattr(self, 'search_edit') else ''
         mode = self.search_mode.currentText()
@@ -249,7 +264,7 @@ class MainWindow(QMainWindow):
         counts = {'Best Match': 0, 'Partial': 0, 'No Match': 0}
         for mcu in mcus:
             # Build feature dicts
-            target = {k: mcu.get(k) for k in feat_cols}
+            target = {k: mcu.get(k) for k in feat_cols} | {'name': mcu.get('name', '')}
             chosen_id = self._selected_our_mcu_id()
             if chosen_id is None:
                 best, score, _ = best_match(target, [{k: mm.get(k) for k in feat_cols} | {'id': mm['id'], 'name': mm['name']} for mm in our_mcus])
@@ -269,8 +284,55 @@ class MainWindow(QMainWindow):
             # Company name
             comp_name = companies_map.get(mcu.get('company_id'), '')
             self.table.setItem(row, 0, QTableWidgetItem(comp_name))
-            self.table.setItem(row, 1, QTableWidgetItem(mcu['name']))
-            self.table.setItem(row, 2, QTableWidgetItem(best['name'] if best else '-'))
+            # Part NO item with ID attached for sorting/selection
+            part_item = QTableWidgetItem(mcu['name'])
+            part_item.setData(Qt.UserRole, mcu['id'])
+            self.table.setItem(row, 1, part_item)
+            # Overlay a small PDF button in front of the name
+            from PySide6.QtWidgets import QWidget, QHBoxLayout, QToolButton, QLabel
+            cell = QWidget()
+            h = QHBoxLayout(cell)
+            h.setContentsMargins(4, 0, 4, 0)
+            h.setSpacing(6)
+            pdf_btn = QToolButton()
+            pdf_btn.setToolTip('Open datasheet (local)')
+            pdf_btn.setCursor(QCursor(Qt.PointingHandCursor))
+            pdf_btn.setAutoRaise(True)
+            # Use text instead of icon, styled as a pill button
+            pdf_btn.setText('PDF')
+            pdf_btn.setMinimumWidth(40)
+            pdf_btn.setFixedHeight(22)
+            pdf_btn.setStyleSheet(
+                "QToolButton {"
+                "  padding: 2px 8px;"
+                "  border: 1px solid #3a6cf4;"
+                "  border-radius: 11px;"
+                "  background-color: rgba(58,108,244,0.15);"
+                "  color: #ffffff;"
+                "  font-weight: 600;"
+                "}"
+                "QToolButton:hover {"
+                "  background-color: rgba(58,108,244,0.28);"
+                "  border-color: #5e86f7;"
+                "}"
+                "QToolButton:pressed {"
+                "  background-color: rgba(58,108,244,0.40);"
+                "  border-color: #86a3fb;"
+                "}"
+            )
+            # Capture current name in lambda default
+            pdf_btn.clicked.connect(lambda _, name=mcu['name']: self._download_datasheet(name))
+            name_lbl = QLabel(mcu['name'])
+            name_lbl.setContentsMargins(0,0,0,0)
+            name_lbl.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+            h.addWidget(pdf_btn)
+            h.addWidget(name_lbl)
+            h.addStretch(1)
+            self.table.setCellWidget(row, 1, cell)
+            # Compatibility item with our_mcu_id (or None)
+            compat_item = QTableWidgetItem(best['name'] if best else '-')
+            compat_item.setData(Qt.UserRole, best['id'] if best else None)
+            self.table.setItem(row, 2, compat_item)
             item_score = QTableWidgetItem(f"{score:.1f}")
             item_score.setTextAlignment(Qt.AlignCenter)
             # Ensure numeric sort on Match % using EditRole
@@ -291,10 +353,7 @@ class MainWindow(QMainWindow):
             chip.setStyleSheet(f"QLabel {{ background-color: {color}; color: white; border-radius: 10px; padding: 2px 6px; margin: 0px; }}")
             chip.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
             self.table.setCellWidget(row, 4, chip)
-            self.table.setRowHeight(row, 28)
-            # Store IDs
-            self.table.item(row, 1).setData(Qt.UserRole, mcu['id'])
-            self.table.item(row, 2).setData(Qt.UserRole, best['id'] if best else None)
+            self.table.setRowHeight(row, 36)
             # Tally counts
             if category in counts:
                 counts[category] += 1
@@ -303,6 +362,61 @@ class MainWindow(QMainWindow):
         self.cat_counts_label.setText(
             f"Best Match: {counts['Best Match']}   |   Partial: {counts['Partial']}   |   No Match: {counts['No Match']}"
         )
+        # Restore previous sorting state
+        if prev_sorting:
+            self.table.setSortingEnabled(True)
+
+    def _download_datasheet(self, mcu_name: str):
+        # Open a local PDF from the datasheets folder by matching the name.
+        import os, re
+        datasheet_dir = r'e:\MCU-com\datasheets'
+        try:
+            if not os.path.isdir(datasheet_dir):
+                os.makedirs(datasheet_dir, exist_ok=True)
+            raw = (mcu_name or '').strip()
+            # Primary key: substring before '-' (e.g., 'XC7A200T' from 'XC7A200T-2FBG6761 (FPGA)')
+            base = raw.split('-', 1)[0].strip()
+            # Fallback if no '-' present: strip at first space or '('
+            if base == raw:
+                base = re.split(r"\s|\(", raw, maxsplit=1)[0]
+            norm_base = re.sub(r'[^a-z0-9]+', '', base.lower())
+            norm_full = re.sub(r'[^a-z0-9]+', '', raw.lower())
+            exact = None
+            partial = []
+            for fn in os.listdir(datasheet_dir):
+                if not fn.lower().endswith('.pdf'):
+                    continue
+                key = re.sub(r'[^a-z0-9]+', '', os.path.splitext(fn)[0].lower())
+                # Try exact base match first
+                if norm_base and key == norm_base:
+                    exact = os.path.join(datasheet_dir, fn)
+                    break
+                # Then exact full-name match
+                if norm_full and key == norm_full:
+                    exact = os.path.join(datasheet_dir, fn)
+                    break
+                # Then substring matches (prefer base)
+                if norm_base and norm_base in key:
+                    partial.append(os.path.join(datasheet_dir, fn))
+                    continue
+                if norm_full and norm_full in key:
+                    partial.append(os.path.join(datasheet_dir, fn))
+            target = exact or (partial[0] if len(partial) == 1 else None)
+            if target:
+                os.startfile(target)
+                return
+            # If multiple candidates, open folder for manual choice without alert
+            if len(partial) > 1:
+                os.startfile(datasheet_dir)
+                return
+            # None found: notify only (do not open folder)
+            QMessageBox.information(self, 'Datasheet', 'Datasheet is not available in the datasheets folder.')
+        except Exception:
+            try:
+                # Notify only on failure
+                QMessageBox.information(self, 'Datasheet', 'Datasheet is not available in the datasheets folder.')
+            except Exception:
+                pass
 
     def _open_add_dialog(self):
         dlg = AddMCUDialog(self.db, self)
@@ -310,11 +424,42 @@ class MainWindow(QMainWindow):
             self._refresh_table()
 
     def _open_details(self, row: int, column: int):
-        comp_id = self.table.item(row, 1).data(Qt.UserRole)
-        our_id = self._selected_our_mcu_id() or self.table.item(row, 2).data(Qt.UserRole)
+        part_item = self.table.item(row, 1)
+        compat_item = self.table.item(row, 2)
+        comp_id = part_item.data(Qt.UserRole) if part_item else None
+        our_id = self._selected_our_mcu_id() or (compat_item.data(Qt.UserRole) if compat_item else None)
         if comp_id is None or our_id is None:
             QMessageBox.information(self, 'Details', 'No match available for detailed comparison.')
             return
+        # Resolve potential ID collision: if comp_id points to Our Company due to non-unique IDs,
+        # re-resolve competitor MCU by company name and part name from the row.
+        try:
+            comp_rec = self.db.get_mcu_by_id(int(comp_id))
+        except Exception:
+            comp_rec = None
+        if comp_rec and int(self.db.get_company_by_id(int(comp_rec.get('company_id'))) .get('is_ours', 0)) == 1:
+            # Look up competitor company by the table's Manufacturer column text
+            company_name = self.table.item(row, 0).text() if self.table.item(row, 0) else ''
+            # Find company id by name
+            comp_id_fixed = None
+            for c in self.db.list_companies(''):
+                if not c.get('is_ours') and c.get('name') == company_name:
+                    # Find MCU by exact part name within this company
+                    part_name = part_item.text() if part_item else ''
+                    for m in self.db.list_mcus_by_company(c['id']):
+                        if m.get('name') == part_name:
+                            comp_id_fixed = m.get('id')
+                            break
+                    break
+            if comp_id_fixed is not None:
+                comp_id = comp_id_fixed
+        # Prevent comparing the same MCU against itself
+        try:
+            if int(comp_id) == int(our_id):
+                QMessageBox.information(self, 'Details', 'Cannot compare an MCU against itself.')
+                return
+        except Exception:
+            pass
         dlg = DetailsDialog(self.db, comp_id, our_id, self)
         dlg.exec()
 
@@ -367,6 +512,9 @@ class MainWindow(QMainWindow):
         if self.company_combo.count() == 0:
             return
         company_id = self.company_combo.currentData()
+        if company_id is None:
+            QMessageBox.information(self, 'Rename Company', 'Select a specific company, not All Companies.')
+            return
         current_name = self.company_combo.currentText()
         name, ok = QInputDialog.getText(self, 'Rename Company', 'New name:', text=current_name)
         if ok and name.strip():
@@ -382,6 +530,9 @@ class MainWindow(QMainWindow):
         if self.company_combo.count() == 0:
             return
         company_id = self.company_combo.currentData()
+        if company_id is None:
+            QMessageBox.information(self, 'Delete Company', 'Select a specific company, not All Companies.')
+            return
         comp = self.db.get_company_by_id(int(company_id))
         if not comp:
             return
@@ -415,10 +566,11 @@ class MainWindow(QMainWindow):
         row.addWidget(QLabel('NCO/Commission:'))
         self.nco_org_combo = QComboBox()
         self.nco_org_combo.currentIndexChanged.connect(self._refresh_nco_table)
+        self.nco_org_combo.currentIndexChanged.connect(self._update_nco_actions)
         row.addWidget(self.nco_org_combo, 2)
-        add_btn = QPushButton('Add Entry')
-        add_btn.clicked.connect(self._open_nco_add)
-        row.addWidget(add_btn)
+        self.nco_add_btn = QPushButton('Add Entry')
+        self.nco_add_btn.clicked.connect(self._open_nco_add)
+        row.addWidget(self.nco_add_btn)
         # Search controls (mode + query)
         row.addWidget(QLabel('Search:'))
         self.nco_search_mode = QComboBox()
@@ -430,9 +582,9 @@ class MainWindow(QMainWindow):
         self.nco_search.textChanged.connect(self._refresh_nco_table)
         row.addWidget(self.nco_search, 2)
         # Edit button
-        edit_btn = QPushButton('Edit Selected')
-        edit_btn.clicked.connect(self._edit_selected_nco)
-        row.addWidget(edit_btn)
+        self.nco_edit_btn = QPushButton('Edit Selected')
+        self.nco_edit_btn.clicked.connect(self._edit_selected_nco)
+        row.addWidget(self.nco_edit_btn)
         refresh_btn = QPushButton('Refresh')
         refresh_btn.clicked.connect(self._refresh_nco_table)
         row.addWidget(refresh_btn)
@@ -504,7 +656,7 @@ class MainWindow(QMainWindow):
 
             # Determine our MCU and compute similarity
             comp = self.db.get_mcu_by_id(int(r.get('comp_mcu_id')))
-            target = {k: comp.get(k) for k in feat_cols} if comp else {}
+            target = ({k: comp.get(k) for k in feat_cols} | {'name': comp.get('name', '')}) if comp else {}
             our_id = r.get('our_mcu_id')
             if our_id is None:
                 # compute best match across our MCUs
@@ -582,6 +734,9 @@ class MainWindow(QMainWindow):
         if not hasattr(self, 'nco_org_combo') or self.nco_org_combo.count() == 0:
             return
         org_id = self.nco_org_combo.currentData()
+        if org_id is None:
+            QMessageBox.information(self, 'Rename Organization', 'Select a specific organization, not All Organizations.')
+            return
         current_name = self.nco_org_combo.currentText()
         name, ok = QInputDialog.getText(self, 'Rename Organization', 'New name:', text=current_name)
         if ok and name.strip():
@@ -593,6 +748,9 @@ class MainWindow(QMainWindow):
         if not hasattr(self, 'nco_org_combo') or self.nco_org_combo.count() == 0:
             return
         org_id = self.nco_org_combo.currentData()
+        if org_id is None:
+            QMessageBox.information(self, 'Delete Organization', 'Select a specific organization, not All Organizations.')
+            return
         name = self.nco_org_combo.currentText()
         resp = QMessageBox.question(self, 'Delete Organization', f"Delete organization '{name}' and all its NCO entries?", QMessageBox.Yes | QMessageBox.No)
         if resp != QMessageBox.Yes:
@@ -600,6 +758,22 @@ class MainWindow(QMainWindow):
         if self.db.delete_nco_org(int(org_id)):
             self._load_nco_orgs()
             self._refresh_nco_table()
+
+    def _update_compare_actions(self):
+        # Disable rename/delete when 'All Companies' is selected
+        selected_specific = self.company_combo.currentData() is not None
+        for act in [self.act_rename_company, self.act_delete_company]:
+            if act:
+                act.setEnabled(selected_specific)
+                act.setVisible(selected_specific if self.tabs.currentIndex() == 0 else False)
+
+    def _update_nco_actions(self):
+        # Disable org edit/delete when 'All Organizations' is selected
+        is_specific = self.nco_org_combo.currentData() is not None
+        for act in [self.act_nco_rename_org, self.act_nco_delete_org]:
+            if act:
+                act.setEnabled(is_specific)
+                act.setVisible(is_specific if self.tabs.currentIndex() == 1 else False)
 
     def _edit_selected_nco(self):
         if not hasattr(self, 'nco_table') or self.nco_table.currentRow() < 0:
@@ -656,9 +830,20 @@ class MainWindow(QMainWindow):
             our_mcus = [dict(r) for r in self.db.list_our_mcus()]
             candidates = [{k: mm.get(k) for k in feat_cols} | {'id': mm['id'], 'name': mm['name']} for mm in our_mcus]
             best, score, _ = best_match(target, candidates)
+            # Guard: if best match equals competitor, do not open self-compare
+            if best and int(best['id']) == int(comp_id):
+                QMessageBox.information(self, 'Details', 'Cannot compare an MCU against itself.')
+                return
             our_id = best['id'] if best else None
         if our_id is None:
             return
+        # Final guard against same IDs
+        try:
+            if int(our_id) == int(comp_id):
+                QMessageBox.information(self, 'Details', 'Cannot compare an MCU against itself.')
+                return
+        except Exception:
+            pass
         dlg = DetailsDialog(self.db, comp_id, int(our_id), self)
         dlg.exec()
 
@@ -692,3 +877,26 @@ class MainWindow(QMainWindow):
             self._load_companies()
         else:
             self._refresh_table()
+
+    def _on_tab_changed(self, index: int):
+        # 0 = Compare, 1 = NCO/Commission
+        is_compare = (index == 0)
+        # Compare actions/buttons enabled only on Compare tab
+        for act in [self.act_add_mcu, self.act_add_company, self.act_rename_company, self.act_delete_company]:
+            if act:
+                act.setEnabled(is_compare)
+                act.setVisible(is_compare)
+        for w in [self.btn_edit_selected, self.btn_delete_selected, self.company_combo, self.search_mode, self.search_edit, self.compare_combo, self.cat_counts_label]:
+            if w:
+                w.setEnabled(is_compare)
+                w.setVisible(is_compare)
+        # NCO actions/buttons enabled only on NCO tab
+        is_nco = not is_compare
+        for act in [self.act_nco_add_org, self.act_nco_rename_org, self.act_nco_delete_org, self.act_nco_add_entry, self.act_nco_edit_selected, self.act_nco_delete_entry, self.act_nco_view]:
+            if act:
+                act.setEnabled(is_nco)
+                act.setVisible(is_nco)
+        for w in [self.nco_org_combo, self.nco_add_btn, self.nco_search_mode, self.nco_search, self.nco_edit_btn]:
+            if hasattr(self, 'nco_org_combo') and w:
+                w.setEnabled(is_nco)
+                w.setVisible(is_nco)

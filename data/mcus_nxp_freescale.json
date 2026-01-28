@@ -1,4 +1,3 @@
-
 [
   {
     "id": "77",
@@ -25,7 +24,14 @@
     "clock_mgmt": 1,
     "qei": 1,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+      "input_capture": 1,
+    "output_compare": 8,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 1,
+    "ext_interrupts": 100
   },
   {
     "id": "78",
@@ -52,7 +58,14 @@
     "clock_mgmt": 1,
     "qei": 1,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+     "input_capture": 1,
+    "output_compare": 6,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 1,
+    "ext_interrupts": 80
   },
   {
     "id": "79",
@@ -79,7 +92,14 @@
     "clock_mgmt": 1,
     "qei": 1,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+     "input_capture": 1,
+    "output_compare": 4,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 1,
+    "ext_interrupts": 60
   },
   {
     "id": "80",
@@ -106,7 +126,14 @@
     "clock_mgmt": 1,
     "qei": 1,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+     "input_capture": 1,
+    "output_compare": 8,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 1,
+    "ext_interrupts": 128
   },
   {
     "id": "81",
@@ -133,12 +160,19 @@
     "clock_mgmt": 1,
     "qei": 1,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+       "input_capture": 1,
+    "output_compare": 12,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 1,
+    "ext_interrupts": 150
   },
   {
     "id": "82",
     "company_id": "3",
-    "name": "OMAP-L137 (OMAPL137DZKBT3)",
+    "name": "OMAPL137-(OMAPL137DZKBT3)",
     "core": "ARM926EJ-S + C28x DSP",
     "core_mark": 35,
     "dsp_core": 1,
@@ -160,7 +194,14 @@
     "clock_mgmt": 1,
     "qei": 1,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+     "input_capture": 1,
+    "output_compare": 4,
+    "qspi": 0,
+    "ethernet": 1,
+    "emif": 1,
+    "spi_slave": 1,
+    "ext_interrupts": 80
   },
   {
     "id": "83",
@@ -187,8 +228,13 @@
     "clock_mgmt": 1,
     "qei": 1,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+     "input_capture": 1,
+    "output_compare": 4,
+    "qspi": 0,
+    "ethernet": 1,
+    "emif": 1,
+    "spi_slave": 1,
+    "ext_interrupts": 80
   }
-
-
 ]

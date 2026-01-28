@@ -24,7 +24,14 @@
     "clock_mgmt": 1,
     "qei": 0,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+    "output_compare": 6,
+    "input_capture": 5,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 1,
+    "ext_interrupts": 64
   },
   {
     "id": "85",
@@ -51,7 +58,14 @@
     "clock_mgmt": 1,
     "qei": 0,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+    "output_compare": 6,
+    "input_capture": 5,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 1,
+    "ext_interrupts": 64
   },
   {
     "id": "86",
@@ -78,6 +92,13 @@
     "clock_mgmt": 1,
     "qei": 0,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+    "output_compare": 6,
+    "input_capture": 5,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 1,
+    "ext_interrupts": 64
   }
 ]

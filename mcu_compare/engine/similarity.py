@@ -21,7 +21,7 @@ CORE_FAMILIES = {
 }
 
 DEFAULT_WEIGHTS: Dict[str, float] = {
-    'core': 0.10,
+    'core': 0.0,
     'core_mark': 0,
     'dsp_core': 0.02,
     'fpu': 0.15,
@@ -43,6 +43,14 @@ DEFAULT_WEIGHTS: Dict[str, float] = {
     'qei': 0.04,
     'internal_osc': 0.04,
     'security_features': 0.05,
+    # New interfaces/peripherals (initial weights; will be normalized overall)
+    'output_compare': 0.02,
+    'input_capture': 0.02,
+    'qspi': 0.03,
+    'ethernet': 0.04,
+    'emif': 0.03,
+    'spi_slave': 0.02,
+    'ext_interrupts': 0.03,
 }
 
 CATEGORIES = [
@@ -113,7 +121,24 @@ def feature_similarity(feature: str, comp_val: Any, our_val: Any) -> float:
         except Exception:
             return 0.0
         return coverage_similarity(cf, of)
-    # Booleans and counts also treated as coverage
+    # Boolean features: directional coverage
+    # - If competitor requires it (True) and we lack it => 0
+    # - If competitor lacks it (False), we get full credit whether we have it or not; especially if we do, it's a plus
+    BOOL_DIR = {
+        'input_capture', 'ethernet', 'emif', 'spi_slave'
+    }
+    if feature in BOOL_DIR:
+        def _to01(x: Any) -> float:
+            try:
+                if isinstance(x, str):
+                    xl = x.strip().lower()
+                    if xl in ('yes', 'true', '1', 'y', 'on'): return 1.0
+                    if xl in ('no', 'false', '0', 'off', ''): return 0.0
+                return 1.0 if float(x) > 0 else 0.0
+            except Exception:
+                return 1.0 if bool(x) else 0.0
+        return coverage_similarity(_to01(comp_val), _to01(our_val))
+    # Counts and other numerics treated as coverage
     try:
         xa = float(comp_val or 0)
         xb = float(our_val or 0)
@@ -123,17 +148,65 @@ def feature_similarity(feature: str, comp_val: Any, our_val: Any) -> float:
 
 
 def weighted_similarity(a: Dict[str, Any], b: Dict[str, Any], weights: Dict[str, float] = None) -> Tuple[float, Dict[str, float]]:
-    weights = weights or DEFAULT_WEIGHTS
+    # Start from defaults if no explicit weights passed
+    if weights is None:
+        # Dynamic adjustment for max_clock_mhz based on competitor requirement (a)
+        base = dict(DEFAULT_WEIGHTS)
+        try:
+            req_clock = float(a.get('max_clock_mhz') or 0)
+        except Exception:
+            req_clock = 0.0
+        target_clock_w = base['max_clock_mhz']
+        if req_clock > 300:
+            target_clock_w = 0.20
+        elif req_clock > 200:
+            target_clock_w = 0.15
+        # If change is needed, scale other weights so the total stays constant
+        if abs(target_clock_w - base['max_clock_mhz']) > 1e-9:
+            total_default = sum(base.values())
+            remaining_default = total_default - base['max_clock_mhz']
+            remaining_target = total_default - target_clock_w
+            scale = remaining_target / remaining_default if remaining_default > 0 else 1.0
+            for k, v in list(base.items()):
+                if k == 'max_clock_mhz':
+                    base[k] = target_clock_w
+                else:
+                    base[k] = v * scale
+        # Normalize final weights to sum to 1.0 so percentages are intuitive
+        total_after = sum(base.values())
+        if total_after > 0:
+            base = {k: (v / total_after) for k, v in base.items()}
+        weights = base
+    # Business rule: if competitor is an FPGA, treat as no match outright
+    core_str = str(a.get('core', '') or '')
+    is_fpga_flag = False
+    try:
+        is_fpga_flag = bool(int(a.get('is_fpga', 0)))
+    except Exception:
+        is_fpga_flag = bool(a.get('is_fpga'))
+    if is_fpga_flag or ('fpga' in core_str.lower()):
+        return 0.0, {feat: 0.0 for feat in weights.keys()}
+
     total_w = sum(weights.values())
     score = 0.0
     per_feature: Dict[str, float] = {}
+    # Helper to support alias: 'DSP' can be used instead of 'dsp_core' in data
+    def _get(d: Dict[str, Any], feat: str):
+        if feat == 'dsp_core':
+            return d.get('dsp_core', d.get('DSP'))
+        return d.get(feat)
     for feat, w in weights.items():
-        s = feature_similarity(feat, a.get(feat), b.get(feat))
+        s = feature_similarity(feat, _get(a, feat), _get(b, feat))
         per_feature[feat] = s
         score += w * s
     if total_w <= 0:
         return 0.0, per_feature
-    return (score / total_w) * 100.0, per_feature
+    pct = (score / total_w) * 100.0
+    # DSP rule: start from 80% if competitor name starts with 'dsPIC'
+    comp_name = str(a.get('name', '') or '').lower().strip()
+    if comp_name.startswith('dspic'):
+        pct = max(0.0, pct - 20.0)
+    return pct, per_feature
 
 
 def best_match(target: Dict[str, Any], candidates: List[Dict[str, Any]], weights: Dict[str, float] = None) -> Tuple[Dict[str, Any], float, Dict[str, float]]:
