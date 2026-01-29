@@ -4,6 +4,7 @@
     "company_id": "10",
     "name": "Nvidia Jetson P3509-0000",
     "core": "ARM Cortex-A57 + NVIDIA GPU",
+    "is_dsp": 1,
     "core_mark": 350,
     "dsp_core": 1,
     "fpu": 1,
@@ -28,13 +29,14 @@
     "input_capture": 1,
     "output_compare": 2,
     "qspi": 0,
-    "external_interrupts": 40
+    "ext_interrupts": 40
   },
   {
     "id": "91",
     "company_id": "10",
     "name": "Nvidia Jetson P3668-0000",
     "core": "ARM Cortex-A57 + NVIDIA GPU",
+    "is_dsp": 1,
     "core_mark": 400,
     "dsp_core": 1,
     "fpu": 1,
@@ -56,9 +58,12 @@
     "qei": 0,
     "internal_osc": 1,
     "security_features": 1,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 1,
     "input_capture": 1,
     "output_compare": 2,
     "qspi": 0,
-    "external_interrupts": 40
+    "ext_interrupts": 40
   }
 ]

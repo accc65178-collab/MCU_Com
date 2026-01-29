@@ -1,9 +1,10 @@
 [
   {
-    "id": "94",
+    "id": 94,
     "company_id": "18",
     "name": "Raspberry Pi 5 (16GB)",
     "core": "ARM Cortex-A76 + Cortex-A55",
+    "is_fpga":1,    
     "core_mark": 250,
     "dsp_core": 1,
     "fpu": 1,
@@ -24,6 +25,13 @@
     "clock_mgmt": 1,
     "qei": 0,
     "internal_osc": 1,
-    "security_features": 1
+    "security_features": 1,
+    "output_compare": 2,
+    "input_capture": 1,
+    "qspi": 0,
+    "ethernet": 1,
+    "emif": 0,
+    "spi_slave": 1,
+    "ext_interrupts": 40
   }
 ]

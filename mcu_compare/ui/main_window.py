@@ -7,9 +7,12 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 import webbrowser
 import os
-from PySide6.QtGui import QColor, QBrush, QAction, QActionGroup, QIcon, QCursor
+from PySide6.QtGui import QColor, QBrush, QAction, QActionGroup, QIcon, QCursor, QKeySequence, QPainter, QPixmap, QPdfWriter, QPageLayout, QPageSize, QImage, QTextDocument
+from PySide6.QtCore import QRect, QPoint, QItemSelectionModel
+from PySide6.QtGui import QRegion
 from PySide6.QtCore import QSize
-from PySide6.QtWidgets import QAbstractItemView, QSizePolicy
+from PySide6.QtWidgets import QAbstractItemView, QSizePolicy, QFileDialog
+from PySide6.QtPrintSupport import QPrinter, QPrintDialog
 
 from mcu_compare.engine.similarity import best_match, categorize
 from mcu_compare.engine.similarity import weighted_similarity
@@ -49,6 +52,17 @@ class MainWindow(QMainWindow):
 
         # Menus
         menubar = self.menuBar()
+        # File menu with Print
+        file_menu = menubar.addMenu('File')
+        self.act_print = QAction('Print', self)
+        self.act_print.setShortcut(QKeySequence.Print)
+        self.act_print.triggered.connect(self._print_current)
+        file_menu.addAction(self.act_print)
+        # Export to PDF for reliable table capture
+        self.act_export_pdf = QAction('Export Table to PDF…', self)
+        self.act_export_pdf.setShortcut('Ctrl+Shift+P')
+        self.act_export_pdf.triggered.connect(self._export_current_table_pdf)
+        file_menu.addAction(self.act_export_pdf)
         data_menu = menubar.addMenu('Data')
         self.act_add_mcu = QAction('Add MCU', self)
         self.act_add_mcu.triggered.connect(self._open_add_dialog)
@@ -145,7 +159,10 @@ class MainWindow(QMainWindow):
         # Table with company column
         self.table = QTableWidget(0, 5)
         self.table.setHorizontalHeaderLabels(['Manufacturer', 'Part NO', 'Compatibility', 'Match %', 'Category'])
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        # Column sizing: make 'Part NO' wider, others fit content
+        t_header = self.table.horizontalHeader()
+        t_header.setSectionResizeMode(QHeaderView.ResizeToContents)
+        t_header.setSectionResizeMode(1, QHeaderView.Stretch)  # Part NO column
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.table.setAlternatingRowColors(True)
@@ -167,6 +184,348 @@ class MainWindow(QMainWindow):
         # Toggle action enabled states when switching tabs
         self.tabs.currentChanged.connect(self._on_tab_changed)
         self._on_tab_changed(self.tabs.currentIndex())
+
+    def _print_current(self):
+        # Determine which widget to print based on current tab
+        # If a Details dialog is open and visible, print that instead
+        if hasattr(self, '_details_dialog') and getattr(self, '_details_dialog', None) is not None:
+            try:
+                if self._details_dialog.isVisible():
+                    # Call public wrapper on the dialog
+                    if hasattr(self._details_dialog, 'print_details'):
+                        self._details_dialog.print_details()
+                    return
+            except Exception:
+                pass
+        idx = self.tabs.currentIndex() if hasattr(self, 'tabs') else 0
+        target = None
+        title = 'StriveFit'
+        if idx == 0 and hasattr(self, 'table'):
+            target = self.table
+            title = 'Compare'
+            font_pt = 11
+            landscape = False
+        elif idx == 1 and hasattr(self, 'nco_table'):
+            target = self.nco_table
+            title = 'NCO/Commission'
+            font_pt = 11
+            landscape = True
+        if target is None:
+            QMessageBox.information(self, 'Print', 'No table available to print on this tab.')
+            return
+        # For tables, open a print dialog and render a text-only table via QTextDocument
+        try:
+            if isinstance(target, QTableWidget):
+                # Defaults if not set above
+                font_pt = locals().get('font_pt', 12)
+                landscape = locals().get('landscape', False)
+                self._print_table_full(target, title, font_pt=font_pt, landscape=landscape)
+            else:
+                self._print_widget(target, title)
+        except Exception as e:
+            try:
+                QMessageBox.warning(self, 'Print', f'Printing failed: {e}')
+            except Exception:
+                pass
+
+    def _print_widget(self, widget, title: str = ''):
+        # Open system print dialog and render the widget scaled to page
+        printer = QPrinter(QPrinter.HighResolution)
+        dlg = QPrintDialog(printer, self)
+        if title:
+            dlg.setWindowTitle(f'Print {title}')
+        if dlg.exec() != QPrintDialog.Accepted:
+            return
+        pix = widget.grab()
+        painter = QPainter(printer)
+        try:
+            page = printer.pageRect()
+            # Scale pixmap to fit page
+            scaled = pix.scaled(page.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            x = page.x() + (page.width() - scaled.width()) // 2
+            y = page.y() + (page.height() - scaled.height()) // 2
+            painter.drawPixmap(x, y, scaled)
+        finally:
+            painter.end()
+
+    def _print_table_full(self, table: QTableWidget, title: str = '', font_pt: int = 12, landscape: bool = False):
+        # Build text-only HTML and print via QTextDocument
+        html = self._table_to_html(table, font_pt=font_pt)
+        if not html:
+            QMessageBox.information(self, 'Print', 'No data to print.')
+            return
+        printer = QPrinter(QPrinter.HighResolution)
+        if landscape:
+            try:
+                # Force via PageLayout to avoid driver overrides
+                layout = printer.pageLayout()
+                layout.setOrientation(QPageLayout.Landscape)
+                printer.setPageLayout(layout)
+            except Exception:
+                try:
+                    printer.setOrientation(QPrinter.Landscape)
+                except Exception:
+                    pass
+        dlg = QPrintDialog(printer, self)
+        if title:
+            dlg.setWindowTitle(f'Print {title}')
+        if dlg.exec() != QPrintDialog.Accepted:
+            return
+        # Some drivers reset orientation from the dialog; force again after accept
+        if landscape:
+            try:
+                layout = printer.pageLayout()
+                layout.setOrientation(QPageLayout.Landscape)
+                printer.setPageLayout(layout)
+            except Exception:
+                try:
+                    printer.setOrientation(QPrinter.Landscape)
+                except Exception:
+                    pass
+        doc = QTextDocument()
+        doc.setHtml(html)
+        try:
+            from PySide6.QtCore import QSizeF
+            paint = printer.pageLayout().paintRectPixels(printer.resolution())
+            doc.setPageSize(QSizeF(paint.size()))
+            doc.setTextWidth(paint.width())
+        except Exception:
+            pass
+        doc.print_(printer)
+
+    def _export_current_table_pdf(self):
+        # If a Details dialog is open and visible, export that instead
+        if hasattr(self, '_details_dialog') and getattr(self, '_details_dialog', None) is not None:
+            try:
+                if self._details_dialog.isVisible():
+                    if hasattr(self._details_dialog, 'export_details_pdf'):
+                        self._details_dialog.export_details_pdf()
+                    return
+            except Exception:
+                pass
+        idx = self.tabs.currentIndex() if hasattr(self, 'tabs') else 0
+        target = None
+        title = 'StriveFit'
+        if idx == 0 and hasattr(self, 'table'):
+            target = self.table
+            title = 'Compare'
+            font_pt = 11
+            landscape = False
+        elif idx == 1 and hasattr(self, 'nco_table'):
+            target = self.nco_table
+            title = 'NCO-Commission'
+            font_pt = 11
+            landscape = True
+        if not isinstance(target, QTableWidget):
+            QMessageBox.information(self, 'Export PDF', 'No table available to export on this tab.')
+            return
+        try:
+            # Defaults if not set above
+            font_pt = locals().get('font_pt', 12)
+            landscape = locals().get('landscape', False)
+            self._export_table_pdf(target, f"{title}.pdf", prompt=True, font_pt=font_pt, landscape=landscape)
+        except Exception as e:
+            try:
+                QMessageBox.warning(self, 'Export PDF', f'Export failed: {e}')
+            except Exception:
+                pass
+
+    def _export_table_pdf(self, table: QTableWidget, default_name: str, prompt: bool = False, *, font_pt: int = 12, landscape: bool = False):
+        # Ask for destination path if requested
+        if prompt:
+            path, _ = QFileDialog.getSaveFileName(self, 'Export Table to PDF', default_name, 'PDF Files (*.pdf)')
+            if not path:
+                return
+            if not path.lower().endswith('.pdf'):
+                path += '.pdf'
+        else:
+            path = default_name
+        # Build text-only HTML and export via QPrinter in PdfFormat
+        html = self._table_to_html(table, font_pt=font_pt)
+        if not html:
+            QMessageBox.information(self, 'Export PDF', 'No data to export.')
+            return
+        printer = QPrinter(QPrinter.HighResolution)
+        printer.setOutputFormat(QPrinter.PdfFormat)
+        printer.setOutputFileName(path)
+        if landscape:
+            try:
+                layout = printer.pageLayout()
+                layout.setOrientation(QPageLayout.Landscape)
+                printer.setPageLayout(layout)
+            except Exception:
+                try:
+                    printer.setOrientation(QPrinter.Landscape)
+                except Exception:
+                    pass
+        doc = QTextDocument()
+        doc.setHtml(html)
+        try:
+            from PySide6.QtCore import QSizeF
+            paint = printer.pageLayout().paintRectPixels(printer.resolution())
+            doc.setPageSize(QSizeF(paint.size()))
+            doc.setTextWidth(paint.width())
+        except Exception:
+            pass
+        doc.print_(printer)
+
+    def _table_to_html(self, table: QTableWidget, *, font_pt: int = 12) -> str:
+        # Extract headers
+        cols = table.columnCount()
+        rows = table.rowCount()
+        if cols == 0 or rows == 0:
+            return ''
+        headers = []
+        for c in range(cols):
+            hi = table.horizontalHeaderItem(c)
+            headers.append((hi.text() if hi else '').strip())
+        # Build rows from items/widgets
+        from PySide6.QtWidgets import QLabel
+        def cell_text(r: int, c: int) -> str:
+            # Prefer visual label text (chip/overlay) first to avoid numeric EditRole leakage
+            w = table.cellWidget(r, c)
+            if w is not None:
+                if isinstance(w, QLabel) and w.text():
+                    return w.text()
+                lbl = w.findChild(QLabel)
+                if lbl is not None and lbl.text():
+                    return lbl.text()
+            it = table.item(r, c)
+            if it is not None and it.text():
+                return it.text()
+            return ''
+        # HTML with simple borders, compact font
+        html = [
+            '<html><head><meta charset="utf-8">',
+            '<style>',
+            f'table{{border-collapse:collapse;width:100%;table-layout:fixed;font:{font_pt}pt Segoe UI,Arial;}}',
+            'th,td{border:1px solid #888;padding:6pt 8pt;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+            'th{background:#eaeaea;font-weight:600;}',
+            'body{margin:10mm;}',
+            '</style></head><body>',
+            '<table>'
+        ]
+        # Header row
+        html.append('<tr>')
+        for h in headers:
+            html.append(f'<th>{h}</th>')
+        html.append('</tr>')
+        # Data rows
+        for r in range(rows):
+            html.append('<tr>')
+            for c in range(cols):
+                txt = cell_text(r, c)
+                # Escape HTML special chars
+                txt = (txt or '').replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                html.append(f'<td>{txt}</td>')
+            html.append('</tr>')
+        html.append('</table></body></html>')
+        return ''.join(html)
+
+    def _compose_table_image(self, table: QTableWidget):
+        """Build a full-image snapshot by cloning the table into an offscreen widget.
+        This avoids viewport-only rendering and ensures all rows/columns are captured."""
+        try:
+            cols = table.columnCount()
+            rows = table.rowCount()
+            if cols == 0 or rows == 0:
+                return None, 0, 0
+            # Create offscreen table
+            clone = QTableWidget(rows, cols)
+            clone.setStyleSheet(table.styleSheet())
+            # Headers
+            for c in range(cols):
+                hdr = table.horizontalHeaderItem(c)
+                clone.setHorizontalHeaderItem(c, QTableWidgetItem(hdr.text() if hdr else ''))
+                try:
+                    cw = table.columnWidth(c)
+                    clone.setColumnWidth(c, cw)
+                except Exception:
+                    pass
+            # Copy content text for each cell (prefer item text; fallback to widget label text)
+            from PySide6.QtWidgets import QLabel
+            for r in range(rows):
+                for c in range(cols):
+                    txt = ''
+                    it = table.item(r, c)
+                    if it is not None:
+                        txt = it.text()
+                    else:
+                        w = table.cellWidget(r, c)
+                        if w is not None:
+                            # try to find a QLabel child that holds the text
+                            lbl = w.findChild(QLabel)
+                            if lbl is not None:
+                                txt = lbl.text()
+                    clone.setItem(r, c, QTableWidgetItem(txt))
+                # Preserve row height
+                try:
+                    clone.setRowHeight(r, table.rowHeight(r))
+                except Exception:
+                    pass
+            # Compute full size (headers + rows)
+            hh = table.horizontalHeader()
+            vh = table.verticalHeader()
+            # Prefer clone metrics; fallback to table metrics
+            header_h = max(clone.horizontalHeader().height(), hh.height(), 24)
+            vh_w = max(clone.verticalHeader().width(), vh.width(), 24)
+            # Sum of row heights (prefer clone values if set)
+            try:
+                content_h = sum(max(clone.rowHeight(r), table.sizeHintForRow(r) or 24) for r in range(rows))
+                if content_h <= 0:
+                    raise ValueError()
+            except Exception:
+                content_h = sum(max(table.rowHeight(r), table.sizeHintForRow(r) or 24) for r in range(rows))
+            # Sum of column widths, fallback to viewport width if sum is tiny
+            try:
+                sum_cols = sum(max(table.columnWidth(c), hh.sectionSize(c)) for c in range(cols))
+            except Exception:
+                sum_cols = sum(table.columnWidth(c) for c in range(cols))
+            if sum_cols <= 0:
+                sum_cols = sum(max(clone.columnWidth(c), clone.horizontalHeader().sectionSize(c)) for c in range(cols))
+            if sum_cols <= 0:
+                sum_cols = max(table.viewport().width(), clone.viewport().width())
+            total_w = vh_w + sum_cols + 2
+            total_h = header_h + content_h + 2
+            if total_w <= 2 or total_h <= 2:
+                # Fallback: try rendering the live table directly using computed geometry
+                # Compute geometry from the live table
+                try:
+                    live_h = max(header_h + sum(max(table.rowHeight(r), table.sizeHintForRow(r) or 24) for r in range(rows)) + 2, 50)
+                    live_w = max(vh.width() + sum(max(table.columnWidth(c), hh.sectionSize(c)) for c in range(cols)) + 2, 200)
+                    # Temporarily resize the live table for full render
+                    old_size = table.size()
+                    table.resize(live_w, live_h)
+                    QApplication.processEvents()
+                    img = QImage(live_w, live_h, QImage.Format_ARGB32)
+                    img.fill(0xFFFFFFFF)
+                    p = QPainter(img)
+                    try:
+                        table.render(p)
+                    finally:
+                        p.end()
+                    # Restore size
+                    table.resize(old_size)
+                    return img, live_w, live_h
+                except Exception:
+                    return None, 0, 0
+            # Size the clone appropriately before rendering
+            clone.resize(total_w, total_h)
+            clone.horizontalHeader().setVisible(True)
+            clone.verticalHeader().setVisible(True)
+            QApplication.processEvents()
+            # Render clone to image
+            img = QImage(total_w, total_h, QImage.Format_ARGB32)
+            img.fill(0xFFFFFFFF)
+            p = QPainter(img)
+            try:
+                clone.render(p)
+            finally:
+                p.end()
+            clone.deleteLater()
+            return img, total_w, total_h
+        except Exception:
+            return None, 0, 0
 
     def _load_companies(self):
         # Only filter companies when search mode is Company
@@ -264,7 +623,9 @@ class MainWindow(QMainWindow):
         counts = {'Best Match': 0, 'Partial': 0, 'No Match': 0}
         for mcu in mcus:
             # Build feature dicts
-            target = {k: mcu.get(k) for k in feat_cols} | {'name': mcu.get('name', '')}
+            # Include flags needed by similarity rules (e.g., is_dsp, is_fpga)
+            target = ({k: mcu.get(k) for k in feat_cols}
+                      | {'name': mcu.get('name', ''), 'is_dsp': mcu.get('is_dsp'), 'is_fpga': mcu.get('is_fpga')})
             chosen_id = self._selected_our_mcu_id()
             if chosen_id is None:
                 best, score, _ = best_match(target, [{k: mm.get(k) for k in feat_cols} | {'id': mm['id'], 'name': mm['name']} for mm in our_mcus])
@@ -342,7 +703,8 @@ class MainWindow(QMainWindow):
             cat_item = QTableWidgetItem(category)
             # Higher value sorts first when descending; use 2,1,0 for Best/Partial/No
             order_map = {'Best Match': 2, 'Partial': 1, 'No Match': 0}
-            cat_item.setData(Qt.EditRole, order_map.get(category, -1))
+            cat_item.setData(Qt.DisplayRole, category)  # ensure visible text is the label
+            cat_item.setData(Qt.EditRole, order_map.get(category, -1))  # numeric for sorting
             cat_item.setTextAlignment(Qt.AlignCenter)
             self.table.setItem(row, 4, cat_item)
             # Category chip as QLabel overlay for visuals
@@ -410,11 +772,11 @@ class MainWindow(QMainWindow):
                 os.startfile(datasheet_dir)
                 return
             # None found: notify only (do not open folder)
-            QMessageBox.information(self, 'Datasheet', 'Datasheet is not available in the datasheets folder.')
+            QMessageBox.information(self, 'Datasheet', 'Datasheet is not available ')
         except Exception:
             try:
                 # Notify only on failure
-                QMessageBox.information(self, 'Datasheet', 'Datasheet is not available in the datasheets folder.')
+                QMessageBox.information(self, 'Datasheet', 'Datasheet is not available ')
             except Exception:
                 pass
 
@@ -461,6 +823,12 @@ class MainWindow(QMainWindow):
         except Exception:
             pass
         dlg = DetailsDialog(self.db, comp_id, our_id, self)
+        # Track active details dialog so File->Print/Export can target it
+        self._details_dialog = dlg
+        try:
+            dlg.finished.connect(lambda _=None: setattr(self, '_details_dialog', None))
+        except Exception:
+            pass
         dlg.exec()
 
     def _edit_selected_mcu(self):
@@ -594,12 +962,17 @@ class MainWindow(QMainWindow):
         # NCO table
         self.nco_table = QTableWidget(0, 7)
         self.nco_table.setHorizontalHeaderLabels(['NCO/Commission', 'Company', 'Competitor MCU', 'Quantity', 'Our MCU', 'Match %', 'Category'])
-        self.nco_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        # Column sizing: make 'Competitor MCU' wider, others fit content
+        header = self.nco_table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(2, QHeaderView.Stretch)  # Competitor MCU
         self.nco_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.nco_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.nco_table.setAlternatingRowColors(True)
         self.nco_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.nco_table.cellDoubleClicked.connect(self._open_nco_details)
+        # Enable header sorting
+        self.nco_table.setSortingEnabled(True)
         v.addWidget(self.nco_table)
 
         self._load_nco_orgs()
@@ -644,6 +1017,10 @@ class MainWindow(QMainWindow):
             return True
 
         filtered = [r for r in rows if matches(r)]
+        # Temporarily disable sorting during population to avoid items shifting rows mid-insert
+        prev_sorting = self.nco_table.isSortingEnabled()
+        if prev_sorting:
+            self.nco_table.setSortingEnabled(False)
         self.nco_table.setRowCount(0)
         for r in filtered:
             row = self.nco_table.rowCount()
@@ -651,12 +1028,48 @@ class MainWindow(QMainWindow):
             self.nco_table.setItem(row, 0, QTableWidgetItem(orgs.get(r.get('org_id'), '')))
             self.nco_table.setItem(row, 1, QTableWidgetItem(comps.get(r.get('company_id'), '')))
             comp_name = mcu_name.get(r.get('comp_mcu_id'), '')
-            self.nco_table.setItem(row, 2, QTableWidgetItem(comp_name))
+            # Add a small PDF button before the competitor MCU name
+            from PySide6.QtWidgets import QWidget, QHBoxLayout, QToolButton, QLabel
+            pdf_cell = QWidget()
+            ph = QHBoxLayout(pdf_cell)
+            ph.setContentsMargins(4, 0, 4, 0)
+            ph.setSpacing(6)
+            pdf_btn = QToolButton()
+            pdf_btn.setText('PDF')
+            pdf_btn.setCursor(QCursor(Qt.PointingHandCursor))
+            pdf_btn.setAutoRaise(True)
+            pdf_btn.setMinimumWidth(40)
+            pdf_btn.setFixedHeight(22)
+            pdf_btn.setToolTip('Open datasheet (local)')
+            pdf_btn.setStyleSheet(
+                "QToolButton {"
+                "  padding: 2px 8px;"
+                "  border: 1px solid #3a6cf4;"
+                "  border-radius: 11px;"
+                "  background-color: rgba(58,108,244,0.15);"
+                "  color: #ffffff;"
+                "  font-weight: 600;"
+                "}"
+                "QToolButton:hover { background-color: rgba(58,108,244,0.28); border-color: #5e86f7; }"
+                "QToolButton:pressed { background-color: rgba(58,108,244,0.40); border-color: #86a3fb; }"
+            )
+            # Keep name label next to button
+            name_lbl = QLabel(comp_name)
+            name_lbl.setContentsMargins(0,0,0,0)
+            name_lbl.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+            # Connect button click to datasheet open
+            pdf_btn.clicked.connect(lambda _, nm=comp_name: self._download_datasheet(nm))
+            ph.addWidget(pdf_btn)
+            ph.addWidget(name_lbl)
+            ph.addStretch(1)
+            self.nco_table.setCellWidget(row, 2, pdf_cell)
             self.nco_table.setItem(row, 3, QTableWidgetItem(str(r.get('quantity', 0))))
 
             # Determine our MCU and compute similarity
             comp = self.db.get_mcu_by_id(int(r.get('comp_mcu_id')))
-            target = ({k: comp.get(k) for k in feat_cols} | {'name': comp.get('name', '')}) if comp else {}
+            target = (({k: comp.get(k) for k in feat_cols}
+                      | {'name': comp.get('name', ''), 'is_dsp': comp.get('is_dsp'), 'is_fpga': comp.get('is_fpga')})
+                      if comp else {})
             our_id = r.get('our_mcu_id')
             if our_id is None:
                 # compute best match across our MCUs
@@ -671,8 +1084,17 @@ class MainWindow(QMainWindow):
             self.nco_table.setItem(row, 4, QTableWidgetItem(our_name))
             item_score = QTableWidgetItem(f"{score:.1f}")
             item_score.setTextAlignment(Qt.AlignCenter)
+            # Ensure numeric sort on Match % using EditRole
+            item_score.setData(Qt.EditRole, float(f"{score:.4f}"))
             self.nco_table.setItem(row, 5, item_score)
             cat = categorize(score)
+            # Backing item for category sorting by custom order
+            order_map = {'Best Match': 2, 'Partial': 1, 'No Match': 0}
+            cat_item = QTableWidgetItem(cat)
+            cat_item.setData(Qt.DisplayRole, cat)  # ensure visible label
+            cat_item.setTextAlignment(Qt.AlignCenter)
+            cat_item.setData(Qt.EditRole, order_map.get(cat, -1))
+            self.nco_table.setItem(row, 6, cat_item)
             from PySide6.QtWidgets import QLabel
             chip = QLabel(cat)
             chip.setAlignment(Qt.AlignCenter)
@@ -680,9 +1102,17 @@ class MainWindow(QMainWindow):
             chip.setStyleSheet(f"QLabel {{ background-color: {color}; color: white; border-radius: 10px; padding: 2px 6px; margin: 0px; }}")
             chip.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
             self.nco_table.setCellWidget(row, 6, chip)
+            # Fit row for PDF button height
+            try:
+                self.nco_table.setRowHeight(row, 36)
+            except Exception:
+                pass
             # Store entry id on first column
             if self.nco_table.item(row, 0):
                 self.nco_table.item(row, 0).setData(Qt.UserRole, r.get('id'))
+        # Restore sorting state
+        if prev_sorting:
+            self.nco_table.setSortingEnabled(True)
 
     def _on_nco_search_mode_change(self):
         # Update placeholder and refresh table according to selected search mode

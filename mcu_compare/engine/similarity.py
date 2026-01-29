@@ -54,7 +54,7 @@ DEFAULT_WEIGHTS: Dict[str, float] = {
 }
 
 CATEGORIES = [
-    (75.0, 'Best Match'),
+    (80.0, 'Best Match'),
     (65.0, 'Partial'),
     (0.0, 'No Match')
 ]
@@ -202,9 +202,18 @@ def weighted_similarity(a: Dict[str, Any], b: Dict[str, Any], weights: Dict[str,
     if total_w <= 0:
         return 0.0, per_feature
     pct = (score / total_w) * 100.0
-    # DSP rule: start from 80% if competitor name starts with 'dsPIC'
-    comp_name = str(a.get('name', '') or '').lower().strip()
-    if comp_name.startswith('dspic'):
+    # DSP rule: apply 20% deduction ONLY if competitor JSON has is_dsp set
+    is_dsp_flag = False
+    try:
+        val = a.get('is_dsp', 0)
+        # Treat numeric/string '1', 'true' as True
+        if isinstance(val, str):
+            is_dsp_flag = val.strip().lower() in ('1', 'true', 'yes', 'y')
+        else:
+            is_dsp_flag = bool(int(val)) if isinstance(val, (int, float)) else bool(val)
+    except Exception:
+        is_dsp_flag = False
+    if is_dsp_flag:
         pct = max(0.0, pct - 20.0)
     return pct, per_feature
 

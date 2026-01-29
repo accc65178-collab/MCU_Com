@@ -88,5 +88,10 @@
     "id": 22,
     "name": "Intel (Legacy)",
     "is_ours": 0
+  },
+  {
+    "id": 23,
+    "name": "Arduino",
+    "is_ours": 0
   }
 ]

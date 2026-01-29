@@ -4,6 +4,7 @@
     "company_id": "16",
     "name": "TERN586 Engine (5E)",
     "core": "Proprietary Engine Core",
+    "is_fpga":1,
     "core_mark": 50,
     "dsp_core": 1,
     "fpu": 0,

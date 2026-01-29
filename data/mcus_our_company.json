@@ -2,7 +2,7 @@
   {
     "id": 1,
     "company_id": 1,
-    "name": "STRIVE-II",
+    "name": "STRIVE-II (Old)",
     "core": "RV32IMC",
     "dsp_core": 1,
     "fpu": 0,
@@ -24,7 +24,14 @@
     "qei": 0,
     "internal_osc": 0,
     "security_features": 1,
-    "core_mark": 1.6
+    "core_mark": 1.6,
+    "output_compare": 0,
+    "input_capture": 0,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 1,
+    "spi_slave": 1,
+    "ext_interrupts": 0
   },
   {
     "id": 3,
@@ -51,18 +58,25 @@
     "qei": 0,
     "internal_osc": 0,
     "security_features": 0,
-    "core_mark": 1.6
+    "core_mark": 1.6,
+    "output_compare": 2,
+    "input_capture": 1,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 0,
+    "ext_interrupts": 3
   },
   {
     "id": 9,
     "company_id": 1,
-    "name": "STRIVE-I(Alpha)",
+    "name": "STRIVE-II (ex-Alpha)",
     "core": "RV32IMC",
     "dsp_core": 0,
     "fpu": 0,
     "max_clock_mhz": 80,
     "flash_kb": 512,
-    "sram_kb": 512,
+    "sram_kb": 128,
     "eeprom": 0,
     "gpios": 94,
     "uarts": 8,
@@ -77,7 +91,14 @@
     "clock_mgmt": 0,
     "qei": 0,
     "internal_osc": 0,
-    "security_features": 0
+    "security_features": 0,
+    "output_compare": 2,
+    "input_capture": 1,
+    "qspi": 0,
+    "ethernet": 0,
+    "emif": 0,
+    "spi_slave": 1,
+    "ext_interrupts": 3
   },
   {
     "id": 110,

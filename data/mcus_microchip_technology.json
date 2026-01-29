@@ -68,7 +68,7 @@
     "ext_interrupts": 23
   },
   {
-    "id": "3",
+    "id": "115",
     "company_id": "4",
     "name": "Atmega128",
     "core": "8-bit AVR",
@@ -371,7 +371,7 @@
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 1,
-    "external_interrupts": 78
+    "ext_interrupts": 78
   },
   {
     "id":"12",
@@ -405,7 +405,7 @@
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 1,
-    "external_interrupts": 64
+    "ext_interrupts": 64
   },
   {
     "id":"13",
@@ -439,7 +439,7 @@
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 1,
-    "external_interrupts": 78
+    "ext_interrupts": 78
   },
   {
     "id":"14",
@@ -473,7 +473,7 @@
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 1,
-    "external_interrupts": 64
+    "ext_interrupts": 64
   },
   {
     "id":"15",
@@ -507,7 +507,7 @@
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 1,
-    "external_interrupts": 100
+    "ext_interrupts": 100
   },
  {
     "id":"16",
@@ -541,7 +541,7 @@
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 1,
-    "external_interrupts": 100
+    "ext_interrupts": 100
   },
   {
     "id":"17",
@@ -575,7 +575,7 @@
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 1,
-    "external_interrupts": 64
+    "ext_interrupts": 64
   },
   {
     "id":"18",
@@ -609,7 +609,7 @@
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 1,
-    "external_interrupts": 64
+    "ext_interrupts": 64
   },
   {
     "id":"19",
@@ -643,7 +643,7 @@
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 0,
-    "external_interrupts": 3
+    "ext_interrupts": 3
   },
   {
     "id":"20",
@@ -677,7 +677,7 @@
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 0,
-    "external_interrupts": 3
+    "ext_interrupts": 3
   },
   {
     "id": "21",
@@ -712,7 +712,7 @@
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 0,
-    "external_interrupts": 1
+    "ext_interrupts": 1
   },
   {
     "id": "22",
@@ -747,7 +747,7 @@
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 0,
-    "external_interrupts": 1
+    "ext_interrupts": 1
   },
   {
     "id": "23",
@@ -782,7 +782,7 @@
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 0,
-    "external_interrupts": 1
+    "ext_interrupts": 1
   },
   {
     "id": "24",
@@ -811,13 +811,13 @@
     "internal_osc": 1,
     "security_features": 1,
 
-    "input_capture": 2,
+    "input_capture": 1,
     "output_compare": 2,
     "qspi": 0,
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 1,
-    "external_interrupts": 2
+    "ext_interrupts": 2
   },
   {
     "id": "25",
@@ -846,13 +846,13 @@
     "internal_osc": 1,
     "security_features": 1,
 
-    "input_capture": 2,
+    "input_capture": 1,
     "output_compare": 2,
     "qspi": 0,
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 1,
-    "external_interrupts": 2
+    "ext_interrupts": 2
   },
   {
     "id":"26",
@@ -881,13 +881,13 @@
     "internal_osc": 1,
     "security_features": 1,
 
-    "input_capture": 2,
+    "input_capture": 1,
     "output_compare": 2,
     "qspi": 0,
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 1,
-    "external_interrupts": 2
+    "ext_interrupts": 2
   },
   {
     "id":"27",
@@ -922,7 +922,7 @@
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 0,
-    "external_interrupts": 1
+    "ext_interrupts": 1
   },
   {
     "id":"28",
@@ -951,13 +951,13 @@
     "internal_osc": 0,
     "security_features": 0,
 
-    "input_capture": 2,
+    "input_capture": 1,
     "output_compare": 2,
     "qspi": 0,
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 1,
-    "external_interrupts": 2
+    "ext_interrupts": 2
   },
   {
     "id":"29",
@@ -986,13 +986,13 @@
     "internal_osc": 0,
     "security_features": 0,
 
-    "input_capture": 2,
+    "input_capture": 1,
     "output_compare": 2,
     "qspi": 0,
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 1,
-    "external_interrupts": 2
+    "ext_interrupts": 2
   },
   {
     "id":"30",
@@ -1021,13 +1021,13 @@
     "internal_osc": 1,
     "security_features": 1,
 
-    "input_capture": 2,
+    "input_capture": 1,
     "output_compare": 2,
     "qspi": 0,
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 1,
-    "external_interrupts": 2
+    "ext_interrupts": 2
   },
    {
     "id":"31",
@@ -1056,13 +1056,13 @@
     "internal_osc": 1,
     "security_features": 1,
 
-    "input_capture": 2,
+    "input_capture": 1,
     "output_compare": 2,
     "qspi": 0,
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 1,
-    "external_interrupts": 2
+    "ext_interrupts": 2
   },
   {
     "id":"32",
@@ -1091,13 +1091,13 @@
     "internal_osc": 0,
     "security_features": 0,
 
-    "input_capture": 2,
+    "input_capture": 1,
     "output_compare": 2,
     "qspi": 0,
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 1,
-    "external_interrupts": 2
+    "ext_interrupts": 2
   },
   {
     "id":"33",
@@ -1126,13 +1126,13 @@
     "internal_osc": 1,
     "security_features": 1,
 
-    "input_capture": 2,
+    "input_capture": 1,
     "output_compare": 2,
     "qspi": 0,
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 1,
-    "external_interrupts": 2
+    "ext_interrupts": 2
   },
   {
     "id":"34",
@@ -1161,13 +1161,13 @@
     "internal_osc": 1,
     "security_features": 1,
 
-    "input_capture": 3,
+    "input_capture": 1,
     "output_compare": 3,
     "qspi": 0,
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 1,
-    "external_interrupts": 3
+    "ext_interrupts": 3
   },
   {
     "id":"35",
@@ -1196,13 +1196,13 @@
     "internal_osc": 1,
     "security_features": 1,
 
-    "input_capture": 4,
+    "input_capture": 1,
     "output_compare": 4,
     "qspi": 0,
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 1,
-    "external_interrupts": 4
+    "ext_interrupts": 4
   },
   {
     "id":"36",
@@ -1231,13 +1231,13 @@
     "internal_osc": 1,
     "security_features": 1,
 
-    "input_capture": 4,
+    "input_capture": 1,
     "output_compare": 4,
     "qspi": 0,
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 1,
-    "external_interrupts": 4
+    "ext_interrupts": 4
   },
   {
     "id":"37",
@@ -1266,13 +1266,13 @@
     "internal_osc": 0,
     "security_features": 0,
 
-    "input_capture": 3,
+    "input_capture": 1,
     "output_compare": 3,
     "qspi": 0,
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 1,
-    "external_interrupts": 3
+    "ext_interrupts": 3
   },
   {
     "id":"38",
@@ -1301,13 +1301,13 @@
     "internal_osc": 0,
     "security_features": 0,
 
-    "input_capture": 3,
+    "input_capture": 1,
     "output_compare": 3,
     "qspi": 0,
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 1,
-    "external_interrupts": 3
+    "ext_interrupts": 3
   },
   {
     "id":"39",
@@ -1336,13 +1336,13 @@
     "internal_osc": 0,
     "security_features": 0,
 
-    "input_capture": 3,
+    "input_capture": 1,
     "output_compare": 3,
     "qspi": 0,
     "ethernet": 0,
     "emif": 0,
     "spi_slave": 1,
-    "external_interrupts": 3
+    "ext_interrupts": 3
   },
   {
     "id":"40",
@@ -1371,13 +1371,13 @@
     "internal_osc": 1,
     "security_features": 1,
 
-    "input_capture": 4,
+    "input_capture": 1,
     "output_compare": 4,
     "qspi": 1,
     "ethernet": 0,
     "emif": 1,
     "spi_slave": 1,
-    "external_interrupts": 4
+    "ext_interrupts": 4
   },
   {
     "id":"41",
@@ -1411,7 +1411,7 @@
     "ethernet":0,
     "emif":0,
     "spi_slave":1,
-    "external_interrupts":1
+    "ext_interrupts":1
   },
   {
     "id":"42",
@@ -1445,13 +1445,14 @@
     "ethernet":0,
     "emif":0,
     "spi_slave":1,
-    "external_interrupts":1
+    "ext_interrupts":1
   },
   {
     "id":"43",
     "company_id":"4",
     "name":"dsPIC30F201",
     "core":"16-bit dsPIC30F",
+    "is_dsp": 1,
     "core_mark":2,
     "dsp_core":1,
     "fpu":0,
@@ -1479,13 +1480,14 @@
     "ethernet":0,
     "emif":0,
     "spi_slave":1,
-    "external_interrupts":1
+    "ext_interrupts":1
   },
   {
     "id":"44",
     "company_id":"4",
     "name":"dsPIC30F4011",
     "core":"16-bit dsPIC30F",
+    "is_dsp": 1,
     "core_mark":2,
     "dsp_core":1,
     "fpu":0,
@@ -1513,13 +1515,14 @@
     "ethernet":0,
     "emif":0,
     "spi_slave":1,
-    "external_interrupts":1
+    "ext_interrupts":1
   },
   {
     "id":"45",
     "company_id":"4",
     "name":"dsPIC30F6010A-20E/PF",
     "core":"16-bit dsPIC30F",
+    "is_dsp": 1,
     "core_mark":2,
     "dsp_core":1,
     "fpu":0,
@@ -1547,13 +1550,14 @@
     "ethernet":0,
     "emif":0,
     "spi_slave":1,
-    "external_interrupts":1
+    "ext_interrupts":5
   },
   {
     "id":"46",
     "company_id":"4",
     "name":"dsPIC30F6013AT-20E/PF",
     "core":"16-bit dsPIC30F",
+    "is_dsp": 1,
     "core_mark":2,
     "dsp_core":1,
     "fpu":0,
@@ -1581,13 +1585,14 @@
     "ethernet":0,
     "emif":0,
     "spi_slave":1,
-    "external_interrupts":1
+    "ext_interrupts":1
   },
   {
     "id":"47",
     "company_id":"4",
     "name":"dsPIC30F6013AT-30EPT",
     "core":"16-bit dsPIC30F",
+    "is_dsp": 1,
     "core_mark":2,
     "dsp_core":1,
     "fpu":0,
@@ -1615,13 +1620,14 @@
     "ethernet":0,
     "emif":0,
     "spi_slave":1,
-    "external_interrupts":1
+    "ext_interrupts":1
   },
   {
     "id":"48",
     "company_id":"4",
     "name":"dsPIC30F6014A-301",
     "core":"16-bit dsPIC30F",
+    "is_dsp": 1,
     "core_mark":2,
     "dsp_core":1,
     "fpu":0,
@@ -1649,13 +1655,14 @@
     "ethernet":0,
     "emif":0,
     "spi_slave":1,
-    "external_interrupts":1
+    "ext_interrupts":10
   },
   {
     "id":"49",
     "company_id":"4",
     "name":"dsPIC33EP256MU806-E/PT",
     "core":"16-bit dsPIC33EP",
+    "is_dsp": 1,
     "core_mark":3,
     "dsp_core":1,
     "fpu":0,
@@ -1683,13 +1690,14 @@
     "ethernet":0,
     "emif":0,
     "spi_slave":1,
-    "external_interrupts":1
+    "ext_interrupts":1
   },
   {
     "id":"50",
     "company_id":"4",
     "name":"dsPIC33EP512GP806-E/PT",
     "core":"16-bit dsPIC33EP",
+    "is_dsp": 1,
     "core_mark":3,
     "dsp_core":1,
     "fpu":0,
@@ -1717,13 +1725,14 @@
     "ethernet":0,
     "emif":0,
     "spi_slave":1,
-    "external_interrupts":1
+    "ext_interrupts":1
   },
 {
     "id":"51",
     "company_id":"4",
     "name":"dsPIC33EV128GM106",
     "core":"16-bit dsPIC33E",
+    "is_dsp": 1,
     "core_mark":3,
     "dsp_core":1,
     "fpu":0,
@@ -1746,7 +1755,7 @@
     "internal_osc":1,
     "security_features":1,
     "output_compare":4,
-    "input_capture":4,
+    "input_capture":1,
     "qspi":0,
     "ethernet":0,
     "emif":0,
@@ -1758,6 +1767,7 @@
     "company_id":"4",
     "name":"dsPIC33EV256GM102-H/SO",
     "core":"16-bit dsPIC33E",
+    "is_dsp": 1,
     "core_mark":3,
     "dsp_core":1,
     "fpu":0,
@@ -1780,7 +1790,7 @@
     "internal_osc":1,
     "security_features":1,
     "output_compare":8,
-    "input_capture":8,
+    "input_capture":1,
     "qspi":0,
     "ethernet":0,
     "emif":0,
@@ -1792,6 +1802,7 @@
     "company_id":"4",
     "name":"dsPIC33FJ32MC204-E/PT",
     "core":"16-bit dsPIC33F",
+    "is_dsp": 1,
     "core_mark":3,
     "dsp_core":1,
     "fpu":0,
@@ -1814,7 +1825,7 @@
     "internal_osc":1,
     "security_features":1,
     "output_compare":2,
-    "input_capture":2,
+    "input_capture":1,
     "qspi":0,
     "ethernet":0,
     "emif":0,
@@ -1848,7 +1859,7 @@
     "internal_osc":1,
     "security_features":1,
     "output_compare":8,
-    "input_capture":8,
+    "input_capture":1,
     "qspi":1,
     "ethernet":0,
     "emif":0,
@@ -1882,7 +1893,7 @@
     "internal_osc":1,
     "security_features":1,
     "output_compare":6,
-    "input_capture":6,
+    "input_capture":1,
     "qspi":1,
     "ethernet":0,
     "emif":0,
@@ -1916,7 +1927,7 @@
     "internal_osc":1,
     "security_features":1,
     "output_compare":8,
-    "input_capture":8,
+    "input_capture":1,
     "qspi":1,
     "ethernet":0,
     "emif":0,
@@ -1950,7 +1961,7 @@
     "internal_osc":1,
     "security_features":1,
     "output_compare":8,
-    "input_capture":8,
+    "input_capture":1,
     "qspi":1,
     "ethernet":1,
     "emif":1,
@@ -1984,7 +1995,7 @@
     "internal_osc": 1,
     "security_features": 1,
     "output_compare": 2,
-    "input_capture": 2,
+    "input_capture": 1,
     "qspi": 0,
     "ethernet": 0,
     "emif": 0,
@@ -2018,7 +2029,7 @@
     "internal_osc": 0,
     "security_features": 1,
     "output_compare": 2,
-    "input_capture": 2,
+    "input_capture": 1,
     "qspi": 0,
     "ethernet": 0,
     "emif": 0,

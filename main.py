@@ -2,7 +2,7 @@ import sys
 import os
 from PySide6.QtWidgets import QApplication
 from PySide6.QtWidgets import QSplashScreen
-from PySide6.QtGui import QPixmap, QIcon
+from PySide6.QtGui import QPixmap, QIcon, QPainter
 from PySide6.QtCore import Qt
 from mcu_compare.ui.main_window import MainWindow
 from mcu_compare.data.json_db import JsonDatabase
@@ -28,15 +28,28 @@ def main():
         root_dir = os.path.dirname(__file__)
         # Prefer project root image if present
         splash_candidates = [
-            os.path.join(root_dir, 'strivefit.png'),
+            os.path.join(root_dir, 'fit.png'),
             os.path.join(root_dir, 'mcu_compare', 'assets', 'strivefit.png'),
+            os.path.join(root_dir, 'strivefit.jpg'),
         ]
         splash = None
         for splash_path in splash_candidates:
             if os.path.exists(splash_path):
                 pix = QPixmap(splash_path)
                 if not pix.isNull():
-                    splash = QSplashScreen(pix)
+                    # Make a smaller square splash (e.g., 256x256), center the image and keep aspect ratio
+                    target_size = 812
+                    square = QPixmap(target_size, target_size)
+                    square.fill(Qt.transparent)
+                    scaled = pix.scaled(target_size, target_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                    painter = QPainter(square)
+                    try:
+                        x = (target_size - scaled.width()) // 2
+                        y = (target_size - scaled.height()) // 2
+                        painter.drawPixmap(x, y, scaled)
+                    finally:
+                        painter.end()
+                    splash = QSplashScreen(square)
                     splash.setWindowFlag(Qt.WindowStaysOnTopHint, True)
                     splash.show()
                     app.processEvents()
@@ -57,7 +70,7 @@ def main():
     # Set application icon (prefer root strivefit.png)
     try:
         icon_candidates = [
-            os.path.join(os.path.dirname(__file__), 'strivefit.png'),
+            os.path.join(os.path.dirname(__file__), 'log.png'),
             os.path.join(os.path.dirname(__file__), 'mcu_compare', 'assets', 'strivefit.png'),
         ]
         for icon_path in icon_candidates:
